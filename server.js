@@ -3,16 +3,15 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   registerAppResource,
-  registerAppTool,
   RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { z } from "zod";
+import { registerShowHoroscopeTool } from "./src/tools/show-horoscope.tool.js";
 
 const DIST_DIR = resolve("dist");
 const WIDGET_HTML_PATH = resolve(DIST_DIR, "index.html");
-const WIDGET_URI = "ui://widget/hello.html";
+const WIDGET_URI = "ui://widget/horoscope.html";
 const MCP_PATH = "/mcp";
 const port = Number(process.env.PORT ?? 3000);
 const NGROK_PUBLIC_URL = "https://chatgpt-hello-demo.ngrok.dev";
@@ -35,6 +34,7 @@ function getWidgetCsp() {
 
 function loadWidgetHtml() {
   if (!existsSync(WIDGET_HTML_PATH)) {
+    console.error("[widget] dist/index.html not found — run npm run build");
     throw new Error(
       'Widget not built. Run "npm run build" first to create dist/index.html.'
     );
@@ -42,28 +42,20 @@ function loadWidgetHtml() {
 
   const html = readFileSync(WIDGET_HTML_PATH, "utf8");
   const baseUrl = getBaseUrl();
+  // console.log(`[widget] loaded HTML (${html.length} bytes), base URL: ${baseUrl}`);
 
-  // ChatGPT loads widget HTML from MCP, not from this server — asset URLs must be absolute.
   return html.replace(/(src|href)="\/assets\//g, `$1="${baseUrl}/assets/`);
 }
 
-const sayHelloInputSchema = {
-  name: z.string().min(1).describe("The user's name"),
-};
-
-const sayHelloOutputSchema = {
-  greeting: z.string(),
-  name: z.string(),
-};
-
-function createHelloServer() {
+function createHoroscopeServer() {
+  // console.log("[mcp] creating server instance");
   const widgetHtml = loadWidgetHtml();
   const widgetCsp = getWidgetCsp();
-  const server = new McpServer({ name: "hello-app", version: "0.1.0" });
+  const server = new McpServer({ name: "horoscope-app", version: "0.1.0" });
 
   registerAppResource(
     server,
-    "hello-widget",
+    "horoscope-widget",
     WIDGET_URI,
     {
       _meta: {
@@ -84,55 +76,25 @@ function createHelloServer() {
     })
   );
 
-  registerAppTool(
-    server,
-    "say_hello",
-    {
-      title: "Say hello",
-      description:
-        "Greets the user by name. Call this when the user shares their name or asks for a hello greeting.",
-      inputSchema: sayHelloInputSchema,
-      outputSchema: sayHelloOutputSchema,
-      _meta: {
-        ui: {
-          resourceUri: WIDGET_URI,
-          csp: widgetCsp,
-        },
-      },
-    },
-    async (args) => {
-      const name = args?.name?.trim?.() ?? "";
-      if (!name) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Please tell me your name so I can greet you.",
-            },
-          ],
-        };
-      }
+  registerShowHoroscopeTool(server, {
+    widgetUri: WIDGET_URI,
+    widgetCsp,
+  });
 
-      const greeting = `Hello ${name}!`;
-
-      return {
-        content: [{ type: "text", text: greeting }],
-        structuredContent: { greeting, name },
-      };
-    }
-  );
-
+  // console.log("[mcp] registered resource and show_horoscope tool");
   return server;
 }
 
 async function handleMcpRequest(req, res) {
-  const server = createHelloServer();
+  console.log(`[mcp] ${req.method} ${req.path}`);
+  const server = createHoroscopeServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
 
   res.on("close", () => {
+    // console.log(`[mcp] connection closed (${req.method} ${req.path})`);
     transport.close();
     server.close();
   });
@@ -140,8 +102,9 @@ async function handleMcpRequest(req, res) {
   try {
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
+    // console.log(`[mcp] request handled (${req.method} ${req.path})`);
   } catch (error) {
-    console.error("Error handling MCP request:", error);
+    console.error(`[mcp] request failed (${req.method} ${req.path}):`, error);
     if (!res.headersSent) {
       res.status(500).send("Internal server error");
     }
@@ -166,10 +129,18 @@ app.options(MCP_PATH, (_req, res) => {
 });
 
 app.use(express.json());
+
+app.use((req, res, next) => {
+  if (req.path !== MCP_PATH) {
+    console.log(`[http] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
 app.use(express.static(DIST_DIR));
 
 app.get("/", (_req, res) => {
-  res.type("text").send("Hello World MCP server");
+  res.type("text").send("Horoscope MCP server");
 });
 
 app.post(MCP_PATH, handleMcpRequest);
@@ -177,7 +148,8 @@ app.get(MCP_PATH, handleMcpRequest);
 app.delete(MCP_PATH, handleMcpRequest);
 
 app.listen(port, () => {
-  console.log(
-    `Hello World MCP server listening on http://localhost:${port}${MCP_PATH}`
-  );
+  console.log("[server] horoscope-app started");
+  console.log(`[server] local:  http://localhost:${port}${MCP_PATH}`);
+  console.log(`[server] base URL: ${getBaseUrl()}`);
+  console.log(`[server] CSP origins: ${getWidgetCsp().resourceDomains.join(", ")}`);
 });

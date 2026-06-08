@@ -122,7 +122,7 @@ NGROK_DOMAIN=my-demo.ngrok.dev npm run start:ngrok
 
 The script will:
 
-1. Build the widget if `dist/` is missing
+1. Build the widget (`npm run build`)
 2. Start the MCP server with `BASE_URL` set to your reserved ngrok host
 3. Open an ngrok tunnel via `ngrok start` (merged user + temp config)
 4. Print the **MCP connector URL** to paste into ChatGPT

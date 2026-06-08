@@ -5,7 +5,7 @@
 # static reserved domain, temp ngrok config, merged user config.
 #
 # This script:
-# 1. Builds the React widget if dist/ is missing
+# 1. Builds the React widget (npm run build)
 # 2. Starts the MCP server on a local port with BASE_URL set to the public ngrok host
 # 3. Starts one ngrok HTTP tunnel to that port
 #
@@ -64,11 +64,9 @@ echo ""
 
 cd "$PROJECT_DIR"
 
-if [ ! -f "dist/index.html" ]; then
-    echo -e "${YELLOW}Widget not built — running npm run build...${NC}"
-    npm run build
-    echo ""
-fi
+echo -e "${YELLOW}Building widget...${NC}"
+npm run build
+echo ""
 
 echo -e "${YELLOW}Stopping any existing ngrok processes...${NC}"
 pkill -f "ngrok" 2>/dev/null || true
@@ -134,7 +132,7 @@ echo -e "${YELLOW}ChatGPT setup:${NC}"
 echo -e "  1. Settings → Apps & Connectors → Advanced → Developer mode ON"
 echo -e "  2. Settings → Connectors → Create"
 echo -e "  3. Paste: ${MCP_URL}"
-echo -e '  4. In a chat, add the connector (+ → More), then say "My name is Alex"'
+echo -e '  4. In a chat, add the connector (+ → More), then say "Show my horoscope"'
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop ngrok and the local server${NC}"
 echo ""
