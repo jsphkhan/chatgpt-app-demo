@@ -7,7 +7,7 @@ import {
 } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerShowHoroscopeTool } from "./src/tools/show-horoscope.tool.js";
+import { registerShowHoroscopeTool } from "./tools/show-horoscope.tool.js";
 
 const DIST_DIR = resolve("dist");
 const WIDGET_HTML_PATH = resolve(DIST_DIR, "index.html");
