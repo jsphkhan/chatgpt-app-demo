@@ -150,7 +150,6 @@ After changing the MCP server (tools, descriptions, metadata), **refresh** the c
 
 - [Apps SDK Quickstart](https://developers.openai.com/apps-sdk/quickstart)
 - [MCP Server docs](https://developers.openai.com/apps-sdk/concepts/mcp-server)
-- [MCP Apps in ChatGPT](https://developers.openai.com/apps-sdk/concepts/mcp-apps-in-chatgpt)
 
 ## License
 
