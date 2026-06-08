@@ -1,0 +1,52 @@
+:root {
+  color: #0b0b0f;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: #f6f8fb;
+}
+
+.card {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+}
+
+.greeting {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111bf5;
+}
+
+.muted {
+  margin: 0;
+  color: #6c768a;
+  line-height: 1.5;
+}
+
+.error {
+  margin: 0;
+  color: #b42318;
+}
