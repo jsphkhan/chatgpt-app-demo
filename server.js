@@ -10,10 +10,28 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
-const WIDGET_HTML_PATH = resolve("dist/index.html");
+const DIST_DIR = resolve("dist");
+const WIDGET_HTML_PATH = resolve(DIST_DIR, "index.html");
 const WIDGET_URI = "ui://widget/hello.html";
 const MCP_PATH = "/mcp";
-const port = Number(process.env.PORT ?? 8787);
+const port = Number(process.env.PORT ?? 3000);
+const NGROK_PUBLIC_URL = "https://chatgpt-hello-demo.ngrok.dev";
+
+function getBaseUrl() {
+  return (process.env.BASE_URL ?? `http://localhost:${port}`).replace(/\/$/, "");
+}
+
+function getWidgetCsp() {
+  const origins = new Set([NGROK_PUBLIC_URL]);
+  const baseUrl = process.env.BASE_URL?.replace(/\/$/, "");
+  if (baseUrl) origins.add(baseUrl);
+
+  const domains = [...origins];
+  return {
+    connectDomains: domains,
+    resourceDomains: domains,
+  };
+}
 
 function loadWidgetHtml() {
   if (!existsSync(WIDGET_HTML_PATH)) {
@@ -21,7 +39,12 @@ function loadWidgetHtml() {
       'Widget not built. Run "npm run build" first to create dist/index.html.'
     );
   }
-  return readFileSync(WIDGET_HTML_PATH, "utf8");
+
+  const html = readFileSync(WIDGET_HTML_PATH, "utf8");
+  const baseUrl = getBaseUrl();
+
+  // ChatGPT loads widget HTML from MCP, not from this server — asset URLs must be absolute.
+  return html.replace(/(src|href)="\/assets\//g, `$1="${baseUrl}/assets/`);
 }
 
 const sayHelloInputSchema = {
@@ -35,19 +58,27 @@ const sayHelloOutputSchema = {
 
 function createHelloServer() {
   const widgetHtml = loadWidgetHtml();
+  const widgetCsp = getWidgetCsp();
   const server = new McpServer({ name: "hello-app", version: "0.1.0" });
 
   registerAppResource(
     server,
     "hello-widget",
     WIDGET_URI,
-    {},
+    {
+      _meta: {
+        ui: { csp: widgetCsp },
+      },
+    },
     async () => ({
       contents: [
         {
           uri: WIDGET_URI,
           mimeType: RESOURCE_MIME_TYPE,
           text: widgetHtml,
+          _meta: {
+            ui: { csp: widgetCsp },
+          },
         },
       ],
     })
@@ -63,7 +94,10 @@ function createHelloServer() {
       inputSchema: sayHelloInputSchema,
       outputSchema: sayHelloOutputSchema,
       _meta: {
-        ui: { resourceUri: WIDGET_URI },
+        ui: {
+          resourceUri: WIDGET_URI,
+          csp: widgetCsp,
+        },
       },
     },
     async (args) => {
@@ -132,6 +166,7 @@ app.options(MCP_PATH, (_req, res) => {
 });
 
 app.use(express.json());
+app.use(express.static(DIST_DIR));
 
 app.get("/", (_req, res) => {
   res.type("text").send("Hello World MCP server");

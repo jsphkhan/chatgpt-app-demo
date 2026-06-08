@@ -68,7 +68,17 @@ npm install
 
 ### 2. Build the React widget
 
-Vite bundles React, CSS, and JavaScript into a single `dist/index.html` file that the MCP server serves to ChatGPT.
+Vite builds React into separate files under `dist/`:
+
+```
+dist/
+├── index.html
+└── assets/
+    ├── index-[hash].js
+    └── index-[hash].css
+```
+
+The MCP server serves `index.html` to ChatGPT and hosts the JS/CSS assets via Express static file serving.
 
 ```bash
 npm run build
@@ -83,26 +93,39 @@ npm start
 You should see:
 
 ```
-Hello World MCP server listening on http://localhost:8787/mcp
+Hello World MCP server listening on http://localhost:3000/mcp
 ```
 
 ### 4. Test locally with MCP Inspector (optional)
 
 ```bash
-npx @modelcontextprotocol/inspector@latest --server-url http://localhost:8787/mcp --transport http
+npx @modelcontextprotocol/inspector@latest --server-url http://localhost:3000/mcp --transport http
 ```
 
 In the inspector, call the `say_hello` tool with `{ "name": "Alex" }` and confirm the response.
 
-### 5. Expose to the internet (for ChatGPT)
+### 5. Expose to the internet with ngrok (for ChatGPT)
 
-ChatGPT needs a public HTTPS URL. Use ngrok:
+ChatGPT needs a public HTTPS URL. Use the built-in ngrok script (same pattern as `travel-agent/packages/mcp-funnel`):
 
 ```bash
-ngrok http 8787
+npm run start:ngrok
 ```
 
-Copy the HTTPS URL and append `/mcp`, e.g. `https://abc123.ngrok.app/mcp`.
+**Prerequisites:** ngrok installed with a reserved domain on your account. Auth is read from your global ngrok config (`~/Library/Application Support/ngrok/ngrok.yml` on macOS) — no `.env` token needed.
+
+Override the default reserved host if needed:
+
+```bash
+NGROK_DOMAIN=my-demo.ngrok.dev npm run start:ngrok
+```
+
+The script will:
+
+1. Build the widget if `dist/` is missing
+2. Start the MCP server with `BASE_URL` set to your reserved ngrok host
+3. Open an ngrok tunnel via `ngrok start` (merged user + temp config)
+4. Print the **MCP connector URL** to paste into ChatGPT
 
 ### 6. Add the connector in ChatGPT
 
@@ -127,6 +150,7 @@ ChatGPT calls `say_hello` and the widget shows **Hello Alex!** (or your name).
 | Edit tools/server | Change `server.js`, restart with `npm start` |
 | Preview widget locally | `npm run dev` (Vite dev server only; not wired to MCP) |
 | Build + start | `npm run build:start` |
+| Start with ngrok for ChatGPT | `npm run start:ngrok` |
 
 After changing the MCP server (tools, descriptions, metadata), **refresh** the connector in ChatGPT: Settings → Connectors → select your connector → **Refresh**.
 
