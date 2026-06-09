@@ -97,52 +97,54 @@ export default function App() {
 
   return (
     <main className="card card--todo">
-      <h1>Todo list</h1>
+      <div className="card--body">
+        <h1>Todo list</h1>
 
-      <form className="todo-form" onSubmit={handleAdd} autoComplete="off">
-        <input
-          className="todo-input"
-          name="title"
-          placeholder="Add a task"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-        <button className="todo-add" type="submit" disabled={isAdding}>
-          {isAdding ? "Adding…" : "Add"}
-        </button>
-      </form>
+        <form className="todo-form" onSubmit={handleAdd} autoComplete="off">
+          <input
+            className="todo-input"
+            name="title"
+            placeholder="Add a task"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <button className="todo-add" type="submit" disabled={isAdding}>
+            {isAdding ? "Adding…" : "Add"}
+          </button>
+        </form>
 
-      <ul className="todo-list">
-        {tasks.map((task) => {
-          const busy = busyIds.has(task.id);
-          return (
-            <li
-              key={task.id}
-              className="todo-item"
-              data-completed={String(task.completed)}
-              data-busy={String(busy)}
-            >
-              <label className="todo-label">
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  disabled={task.completed || busy}
-                  onChange={() => {
-                    if (!task.completed) handleComplete(task.id);
-                  }}
-                />
-                <span>{task.title}</span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+        <ul className="todo-list">
+          {tasks.map((task) => {
+            const busy = busyIds.has(task.id);
+            return (
+              <li
+                key={task.id}
+                className="todo-item"
+                data-completed={String(task.completed)}
+                data-busy={String(busy)}
+              >
+                <label className="todo-label">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    disabled={task.completed || busy}
+                    onChange={() => {
+                      if (!task.completed) handleComplete(task.id);
+                    }}
+                  />
+                  <span>{task.title}</span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
 
-      {tasks.length === 0 && (
-        <p className="muted todo-empty">
-          Ask ChatGPT to add a task, or type one above.
-        </p>
-      )}
+        {tasks.length === 0 && (
+          <p className="muted todo-empty">
+            Ask ChatGPT to add a task, or type one above.
+          </p>
+        )}
+      </div>
     </main>
   );
 }

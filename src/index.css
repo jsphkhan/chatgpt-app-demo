@@ -22,17 +22,20 @@ body {
 
 .card {
   width: 100%;
-  max-width: 360px;
-  min-height: 260px;
   margin: 0 auto;
   padding: 20px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
 
 .card--todo {
+  max-width: 360px;
+  min-height: 260px;
+}
+
+.card--body {
   padding: 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
 
 .card--empty {

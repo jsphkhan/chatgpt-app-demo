@@ -166,15 +166,14 @@
     participant MCP as MCP Server&lt;br/&gt;(server.js)
     participant Widget as React Widget&lt;br/&gt;(dist/index.html)
 
-    User-&gt;&gt;ChatGPT: "What's my horoscope?"
-    ChatGPT-&gt;&gt;User: Asks for date of birth (YYYY-MM-DD)
-    User-&gt;&gt;ChatGPT: "1990-08-15"
-    ChatGPT-&gt;&gt;MCP: tools/call show_horoscope { dob: "1990-08-15" }
-    ChatGPT-&gt;&gt;Widget: ui/notifications/tool-input
-    Note over Widget: Skeleton loading
-    MCP--&gt;&gt;ChatGPT: structuredContent { sign, mood, points }
+    User-&gt;&gt;ChatGPT: "Add a task to read my book"
+    ChatGPT-&gt;&gt;MCP: tools/call add_todo { title: "Read my book" }
     ChatGPT-&gt;&gt;Widget: ui/notifications/tool-result
-    Widget--&gt;&gt;User: Horoscope card in iframe</pre>
+    Widget--&gt;&gt;User: Todo list updates in iframe
+    User-&gt;&gt;Widget: Checks off a task
+    Widget-&gt;&gt;ChatGPT: tools/call complete_todo { id: "todo-1" }
+    ChatGPT-&gt;&gt;MCP: tools/call complete_todo
+    MCP--&gt;&gt;Widget: structuredContent { tasks }</pre>
           </figure>
         </div>
       </section>
