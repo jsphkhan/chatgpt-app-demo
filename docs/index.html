@@ -42,11 +42,6 @@
           <header class="site-header">
             <h1>ChatGPT Apps Demo - June 9, 2026</h1>
           </header>
-
-          <p>
-            These docs explain how the codebase works. They run locally via
-            <code>npm run docs</code> and are not part of the production build.
-          </p>
         </div>
       </section>
 
@@ -103,7 +98,7 @@
           <h2>Code repo</h2>
           <ul class="nav-list">
             <li>
-              <a href="https://github.com/jsphkhan/chatgpt-app-demo">GitHub repository</a>
+              <a href="https://github.com/jsphkhan/chatgpt-app-demo" target="_blank" rel="noopener noreferrer">GitHub repository</a>
             </li>
           </ul>
         </div>
@@ -120,6 +115,7 @@
         sequence: { useMaxWidth: true },
       });
 
+      const SLIDE_STORAGE_KEY = "docs-home-slide";
       const deck = document.getElementById("slides");
       const slides = [...deck.querySelectorAll(".slide")];
       const dots = [...document.querySelectorAll(".slide-dot")];
@@ -128,6 +124,18 @@
       const currentEl = document.getElementById("slide-current");
       let activeIndex = 0;
       let scrolling = false;
+
+      function saveSlide(index) {
+        sessionStorage.setItem(SLIDE_STORAGE_KEY, String(index));
+      }
+
+      function getSavedSlide() {
+        const saved = Number(sessionStorage.getItem(SLIDE_STORAGE_KEY));
+        if (!Number.isInteger(saved) || saved < 0 || saved >= slides.length) {
+          return 0;
+        }
+        return saved;
+      }
 
       function setActive(index) {
         activeIndex = index;
@@ -139,16 +147,24 @@
           dot.classList.toggle("is-active", isActive);
           dot.setAttribute("aria-current", isActive ? "true" : "false");
         });
+        saveSlide(index);
       }
 
-      function goToSlide(index) {
+      function goToSlide(index, { smooth = true } = {}) {
         const target = Math.max(0, Math.min(index, slides.length - 1));
-        scrolling = true;
-        slides[target].scrollIntoView({ behavior: "smooth", block: "start" });
+        scrolling = smooth;
+        slides[target].scrollIntoView({
+          behavior: smooth ? "smooth" : "instant",
+          block: "start",
+        });
         setActive(target);
-        window.setTimeout(() => {
+        if (smooth) {
+          window.setTimeout(() => {
+            scrolling = false;
+          }, 800);
+        } else {
           scrolling = false;
-        }, 800);
+        }
       }
 
       dots.forEach((dot) => {
@@ -174,6 +190,8 @@
       );
 
       slides.forEach((slide) => observer.observe(slide));
+
+      goToSlide(getSavedSlide(), { smooth: false });
 
       window.addEventListener("keydown", (e) => {
         const tag = e.target.tagName;

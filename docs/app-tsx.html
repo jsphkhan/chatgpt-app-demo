@@ -149,6 +149,231 @@
         </table>
       </section>
 
+      <!-- How ChatGPT notifies the iframe -->
+      <section class="doc-section">
+        <h2>How ChatGPT notifies your widget iframe</h2>
+
+        <p>
+          Your React app does not poll the MCP server or open a WebSocket. It
+          sits inside an <strong>iframe</strong> embedded in ChatGPT. ChatGPT is
+          the <strong>parent window</strong>; your widget talks to it over the
+          browser <code>postMessage</code> API using the MCP Apps protocol
+          (JSON-RPC messages).
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// useApp creates this for you under the hood:
+const transport = new PostMessageTransport(
+  window.parent,  // send messages to ChatGPT
+  window.parent   // only accept messages from ChatGPT
+);
+await app.connect(transport);</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  <code>PostMessageTransport</code> wraps
+                  <code>window.parent.postMessage</code> and a
+                  <code>message</code> event listener. Outgoing and incoming
+                  traffic is JSON-RPC — the same shape MCP uses elsewhere, but
+                  routed through the iframe boundary instead of HTTP.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>1. Handshake (before any tool events)</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Diagram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <p>When the iframe loads, <code>useApp</code> connects and runs
+                an initialization handshake:</p>
+                <ol>
+                  <li>Widget sends <code>ui/initialize</code> (app name, version, capabilities)</li>
+                  <li>ChatGPT replies with host capabilities and context</li>
+                  <li>Widget sends <code>ui/notifications/initialized</code></li>
+                  <li><code>isConnected</code> becomes <code>true</code></li>
+                </ol>
+                <p>
+                  Handlers like <code>ontoolresult</code> must be registered in
+                  <code>onAppCreated</code> <em>before</em> this finishes, or
+                  early notifications can be missed.
+                </p>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">React widget (iframe)
+        │
+        │  ui/initialize
+        ▼
+   ChatGPT (parent)
+        │
+        │  initialize response
+        ▼
+React widget
+        │
+        │  ui/notifications/initialized
+        ▼
+   isConnected = true</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2. Tool lifecycle notifications (Host → View)</h3>
+        <p>
+          After ChatGPT calls <code>show_horoscope</code> on your MCP server, it
+          pushes updates into the iframe. These are
+          <strong>notifications</strong> (no response expected) with method names
+          defined by the MCP Apps spec:
+        </p>
+
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Notification</th>
+              <th>Your handler</th>
+              <th>When ChatGPT sends it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>ui/notifications/tool-input</code></td>
+              <td><code>app.ontoolinput</code></td>
+              <td>
+                Tool call has started; complete arguments are available (e.g.
+                <code>{ dob: "1990-08-15" }</code>). Widget shows skeleton.
+              </td>
+            </tr>
+            <tr>
+              <td><code>ui/notifications/tool-result</code></td>
+              <td><code>app.ontoolresult</code></td>
+              <td>
+                MCP server returned the tool result. Payload is a standard
+                <code>CallToolResult</code> — includes
+                <code>content</code> and <code>structuredContent</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>ui/notifications/tool-cancelled</code></td>
+              <td><code>app.ontoolcancelled</code></td>
+              <td>
+                Tool call was cancelled (user action, timeout, etc.). Widget
+                should clear loading state.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3. What the raw message looks like</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// ChatGPT → iframe via postMessage (simplified)
+{
+  "jsonrpc": "2.0",
+  "method": "ui/notifications/tool-result",
+  "params": {
+    "content": [
+      { "type": "text", "text": "♌ Leo: Cosmic energy..." }
+    ],
+    "structuredContent": {
+      "dob": "1990-08-15",
+      "sign": "Leo",
+      "symbol": "♌",
+      "mood": "Cosmic energy favors bold moves today.",
+      "points": ["...", "...", "..."],
+      "accentColor": "#FF9F43"
+    }
+  }
+}</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  <code>PostMessageTransport</code> receives this on the
+                  <code>message</code> event, validates
+                  <code>event.source === window.parent</code>, parses the
+                  JSON-RPC payload, and routes it inside the
+                  <code>App</code> class.
+                </p>
+                <p>
+                  <code>useApp</code> abstracts the transport — you only assign
+                  <code>app.ontoolresult = (result) => { ... }</code> and read
+                  <code>result.structuredContent</code>. That is the same data
+                  your server returned from
+                  <code>handleShowHoroscope</code> in
+                  <code>tools/show-horoscope.tool.js</code>.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4. End-to-end path for this project</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Diagram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <ol>
+                  <li>ChatGPT calls <code>show_horoscope</code> over HTTP to your MCP server</li>
+                  <li>Server runs <code>handleShowHoroscope</code> and returns the result</li>
+                  <li>ChatGPT already loaded your widget HTML from <code>registerAppResource</code></li>
+                  <li>ChatGPT posts <code>tool-input</code> then <code>tool-result</code> into the iframe</li>
+                  <li><code>App.tsx</code> handlers update React state and re-render the card</li>
+                </ol>
+                <p>
+                  The MCP HTTP call and the iframe
+                  <code>postMessage</code> notifications are
+                  <strong>two separate channels</strong>. The server never talks
+                  to the widget directly — ChatGPT is the bridge.
+                </p>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">ChatGPT ──HTTP──► server.js (tools/call)
+   │                      │
+   │                      └── returns structuredContent
+   │
+   │ postMessage (tool-input)
+   ▼
+iframe: App.tsx (skeleton)
+   │
+   │ postMessage (tool-result)
+   ▼
+iframe: App.tsx (horoscope card)</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <!-- Event handlers -->
       <section class="doc-section">
         <h2>Event handlers</h2>
