@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Publishing your App — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1>Publishing your App</h1>
+        <p class="subtitle">
+          Guidelines and steps for submitting a ChatGPT app for review
+        </p>
+      </header>
+
+      <!-- Overview -->
+      <section class="doc-section">
+        <h2>Overview</h2>
+        <p>
+          Publishing a ChatGPT app means submitting your MCP server and widget for
+          OpenAI review so it can appear in the ChatGPT app directory. The
+          ecosystem is built on trust — your app must be safe, useful, reliable,
+          and respectful of user privacy.
+        </p>
+      </section>
+
+      <!-- UX / UI -->
+      <section class="doc-section">
+        <h2>UX &amp; UI principles</h2>
+
+        <ul class="nav-list">
+          <li>
+            <a href="https://developers.openai.com/apps-sdk/concepts/ux-principles" target="_blank" rel="noopener noreferrer">UX principles for ChatGPT apps</a>
+          </li>
+          <li>
+            <a href="https://developers.openai.com/apps-sdk/concepts/ui-guidelines" target="_blank" rel="noopener noreferrer">UI guidelines for ChatGPT apps</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Tools -->
+      <section class="doc-section">
+        <h2>Best practices for tools</h2>
+        <p>
+          MCP tools are the manual ChatGPT reads to use your app. Clear names,
+          accurate descriptions, and correct annotations reduce review friction and
+          help the model invoke tools safely.
+        </p>
+
+        <h3>Tool names</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Guideline</th><th>Example</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <ul>
+                  <li>Unique within your app</li>
+                  <li>Human-readable, verb-led, specific to the action</li>
+                  <li>Avoid promotional or comparative words</li>
+                </ul>
+              </td>
+              <td class="code-cell">
+                <pre><code>// Good
+show_horoscope
+get_order_status
+search_flights
+
+// Avoid
+best_horoscope
+official_weather
+pick_me</code></pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Tool descriptions</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code (this project)</th><th>What makes it review-ready</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>description:
+  "Displays a personalized horoscope card based on " +
+  "the user's date of birth. When the user asks for " +
+  "their horoscope, first ask for their date of birth " +
+  "(YYYY-MM-DD), then call this tool with their DOB."</code></pre>
+              </td>
+              <td class="desc-cell">
+                <ul>
+                  <li>States what the tool does (displays a horoscope card)</li>
+                  <li>Tells the model <em>when</em> to call it (user asks for horoscope)</li>
+                  <li>Specifies required input format (YYYY-MM-DD)</li>
+                  <li>Does not disparage other apps or ask the model to prefer this tool</li>
+                  <li>Does not trigger on overly broad intents unrelated to horoscopes</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Tool annotations</h3>
+        <p>
+          Annotations tell ChatGPT and users how cautious to be. Incorrect labels
+          are a common rejection reason — you must justify each annotation at
+          submission time.
+        </p>
+
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Annotation</th>
+              <th>Meaning</th>
+              <th>When to use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>readOnlyHint</code></td>
+              <td>Tool only reads or displays data; does not change anything outside ChatGPT</td>
+              <td>Lookups, search, status checks, read-only generators (like this demo’s horoscope)</td>
+            </tr>
+            <tr>
+              <td><code>destructiveHint</code></td>
+              <td>Tool performs irreversible or high-impact writes (delete, cancel, overwrite)</td>
+              <td>Deleting records, canceling orders, removing accounts</td>
+            </tr>
+            <tr>
+              <td><code>openWorldHint</code></td>
+              <td>Tool interacts with external systems, accounts, or public platforms</td>
+              <td>Posting to social media, sending email, charging a card, publishing public content</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Examples</th><th>Typical annotations</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// Read-only lookup (horoscope demo)
+show_horoscope
+  readOnlyHint: true
+  destructiveHint: false
+  openWorldHint: false
+
+// Write to external system
+send_email
+  readOnlyHint: false
+  destructiveHint: false
+  openWorldHint: true
+
+// Destructive external action
+delete_user_account
+  readOnlyHint: false
+  destructiveHint: true
+  openWorldHint: true</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  <strong><code>show_horoscope</code></strong> in this demo only
+                  generates and returns data for the widget — it does not post,
+                  charge, or modify external state. That maps to read-only,
+                  non-destructive, closed-world.
+                </p>
+                <p>
+                  Any tool that sends data outside the chat (email, posts,
+                  uploads) should set <code>openWorldHint: true</code> and
+                  usually <code>readOnlyHint: false</code>. Destructive actions
+                  need <code>destructiveHint: true</code> plus clear description
+                  text so clients can show confirmation.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          Also keep inputs minimal and purpose-driven — request only fields
+          required for the task (e.g. <code>dob</code> for a horoscope, not full
+          chat history or precise GPS).
+        </p>
+      </section>
+
+      <!-- Submission -->
+      <section class="doc-section">
+        <h2>Submitting in ChatGPT</h2>
+        <ul class="nav-list">
+          <li>
+            <a href="https://platform.openai.com/apps-manage" target="_blank" rel="noopener noreferrer">OpenAI Platform Apps Dashboard</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Official reference -->
+      <section class="doc-section">
+        <h2>Official reference</h2>
+        <ul class="nav-list">
+          <li>
+            <a href="https://developers.openai.com/apps-sdk/app-submission-guidelines" target="_blank" rel="noopener noreferrer">App submission guidelines</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

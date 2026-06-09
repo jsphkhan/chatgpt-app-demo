@@ -236,6 +236,20 @@ pre code {
   max-height: 420px;
 }
 
+.block-diagram {
+  margin: 16px 0 0;
+  padding: 0;
+  width: 100%;
+}
+
+.diagram--full {
+  width: 100%;
+  max-height: none;
+  font-size: 0.72rem;
+  padding: 20px;
+  overflow-x: auto;
+}
+
 .doc-table--split td.code-cell .diagram {
   border: none;
   border-radius: 0;
@@ -323,6 +337,7 @@ body.slides-page {
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 .slide {
@@ -353,8 +368,79 @@ body.slides-page {
   margin-top: 0;
 }
 
+.slide-subsection {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.slide-subsection__title {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.agenda-list {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  max-width: 720px;
+}
+
+.agenda-list > li {
+  margin-bottom: 1.1rem;
+}
+
+.agenda-list > li:last-child {
+  margin-bottom: 0;
+}
+
+.agenda-desc {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.agenda-sublist {
+  margin: 0.45rem 0 0;
+  padding-left: 1.5rem;
+}
+
+.agenda-sublist li {
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+}
+
 .slides-page .site-header {
   margin-bottom: 24px;
+}
+
+.slide__inner--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.slide__inner--center h1 {
+  margin: 0;
+  max-width: 900px;
+}
+
+.slide__inner--center .subtitle {
+  margin: 0;
+  max-width: 700px;
+  font-size: 1.15rem;
+}
+
+.slide--title .site-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .slide-dots {

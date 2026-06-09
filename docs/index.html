@@ -14,34 +14,128 @@
   </head>
   <body class="slides-page">
     <nav class="slide-dots" aria-label="Slide navigation">
-      <button type="button" class="slide-dot is-active" data-slide="0" aria-label="Introduction" aria-current="true"></button>
-      <button type="button" class="slide-dot" data-slide="1" aria-label="High Level Flow"></button>
-      <button type="button" class="slide-dot" data-slide="2" aria-label="Data flow"></button>
-      <button type="button" class="slide-dot" data-slide="3" aria-label="Pages"></button>
-      <button type="button" class="slide-dot" data-slide="4" aria-label="Code repo"></button>
+      <button type="button" class="slide-dot is-active" data-slide="0" aria-label="Title" aria-current="true"></button>
+      <button type="button" class="slide-dot" data-slide="1" aria-label="Agenda"></button>
+      <button type="button" class="slide-dot" data-slide="2" aria-label="Introduction"></button>
+      <button type="button" class="slide-dot" data-slide="3" aria-label="Building Apps for ChatGPT"></button>
+      <button type="button" class="slide-dot" data-slide="4" aria-label="High Level Flow"></button>
+      <button type="button" class="slide-dot" data-slide="5" aria-label="Data flow"></button>
+      <button type="button" class="slide-dot" data-slide="6" aria-label="Let's build our own App"></button>
+      <button type="button" class="slide-dot" data-slide="7" aria-label="Running &amp; Testing"></button>
+      <button type="button" class="slide-dot" data-slide="8" aria-label="Publishing your App"></button>
+      <button type="button" class="slide-dot" data-slide="9" aria-label="Important parts of code"></button>
+      <button type="button" class="slide-dot" data-slide="10" aria-label="Code repo"></button>
+      <button type="button" class="slide-dot" data-slide="11" aria-label="Thanks!"></button>
     </nav>
 
     <nav class="slide-controls" aria-label="Slide controls">
-      <button type="button" id="slide-prev" class="slide-btn" aria-label="Previous slide" disabled>
+      <button type="button" id="slide-prev" class="slide-btn" aria-label="Next slide">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path d="M12 16l-6-6h12l-6 6z" fill="currentColor" />
         </svg>
       </button>
-      <button type="button" id="slide-next" class="slide-btn" aria-label="Next slide">
+      <button type="button" id="slide-next" class="slide-btn" aria-label="Previous slide" disabled>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path d="M12 8l6 6H6l6-6z" fill="currentColor" />
         </svg>
       </button>
     </nav>
 
-    <p class="slide-counter" aria-live="polite"><span id="slide-current">1</span> / <span id="slide-total">5</span></p>
+    <p class="slide-counter" aria-live="polite"><span id="slide-current">1</span> / <span id="slide-total">12</span></p>
 
     <main class="slides-deck" id="slides">
-      <section class="slide" id="slide-intro">
+      <section class="slide slide--title" id="slide-intro">
+        <div class="slide__inner slide__inner--center">
+          <h1>ChatGPT Apps Demo - June 9, 2026</h1>
+          <p class="subtitle">Building Apps for ChatGPT &amp; Conversational agents</p>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-agenda">
         <div class="slide__inner">
-          <header class="site-header">
-            <h1>ChatGPT Apps Demo - June 9, 2026</h1>
-          </header>
+          <h2>Agenda</h2>
+          <ol class="agenda-list">
+            <li>
+              <strong>Introduction</strong>
+              <span class="agenda-desc">ChatGPT, the App Store, and how users install and try apps</span>
+            </li>
+            <li>
+              <strong>Building Apps for ChatGPT</strong>
+              <ol class="agenda-sublist" type="a">
+                <li>Basic building blocks</li>
+                <li>Architecture</li>
+                <li>Data flow</li>
+              </ol>
+            </li>
+            <li>
+              <strong>Building an App</strong>
+              <span class="agenda-desc">UX/UI principles and walking through the horoscope demo</span>
+            </li>
+            <li>
+              <strong>Important parts of code</strong>
+              <span class="agenda-desc">App.tsx, registerAppTool, registerAppResource, and how they connect</span>
+            </li>
+            <li>
+              <strong>Running &amp; Testing your App</strong>
+              <span class="agenda-desc">Local MCP Inspector, ngrok, and testing in ChatGPT</span>
+            </li>
+            <li>
+              <strong>Publishing your app</strong>
+              <span class="agenda-desc">Submission guidelines, tool design, and the Platform Dashboard</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-introduction">
+        <div class="slide__inner">
+          <h2>Introduction</h2>
+          <ol>
+            <li>to ChatGPT</li>
+            <li>to ChatGPT App Store</li>
+            <li>Installing Apps</li>
+            <li>Trying Apps</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-building-apps">
+        <div class="slide__inner">
+          <h2>Building Apps for ChatGPT</h2>
+          <ul class="nav-list">
+            <li>
+              <a href="/building-apps-for-chatgpt.html">Basic building blocks</a> — MCP Server, Web Component/UI Widget
+            </li>
+          </ul>
+
+          <div class="slide-subsection">
+            <h3 class="slide-subsection__title">Quickstart</h3>
+            <p>
+              OpenAI’s official quickstart guide for building apps for ChatGPT.
+            </p>
+            <ul class="nav-list">
+              <li>
+                <a href="https://developers.openai.com/apps-sdk/quickstart" target="_blank" rel="noopener noreferrer">Quickstart guide</a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="slide-subsection">
+            <h3 class="slide-subsection__title">UI/UX Guidelines</h3>
+            <p>
+              OpenAI’s official guides for building apps that feel native to
+              ChatGPT — focused conversational flows, consistent UI patterns, and
+              a pre-submission checklist.
+            </p>
+            <ul class="nav-list">
+              <li>
+                <a href="https://developers.openai.com/apps-sdk/concepts/ux-principles" target="_blank" rel="noopener noreferrer">UX principles for ChatGPT apps</a>
+              </li>
+              <li>
+                <a href="https://developers.openai.com/apps-sdk/concepts/ui-guidelines" target="_blank" rel="noopener noreferrer">UI guidelines for ChatGPT apps</a>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -55,6 +149,10 @@
               width="900"
             />
           </figure>
+          <pre class="diagram">ChatGPT (parent page)
+  └── sandboxed iframe
+        └── your React widget (dist/index.html)
+              └── talks to ChatGPT via postMessage (useApp / PostMessageTransport)</pre>
         </div>
       </section>
 
@@ -81,14 +179,79 @@
         </div>
       </section>
 
+      <section class="slide" id="slide-build-app">
+        <div class="slide__inner">
+          <h2>Let's build our own App</h2>
+          <p>We will build a To-Do App</p>
+          <ol>
+            <li>Build our MCP Server &amp; MCP Tools</li>
+            <li>Build our UI/Web Component</li>
+            <li>Connect the MCP Server with the UI</li>
+            <li>Test it locally</li>
+            <li>Connect/Wire to ChatGPT</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-running-testing">
+        <div class="slide__inner">
+          <h2>Running &amp; Testing</h2>
+
+          <h3>1. Testing locally</h3>
+          <ol>
+            <li>
+              Start your MCP server
+              <pre><code>npm run build:start</code></pre>
+              <p>Builds the widget, then starts the server at <code>http://localhost:3000/mcp</code></p>
+            </li>
+            <li>
+              Start MCP Inspector
+              <pre><code>npm run inspector</code></pre>
+              <p>Opens the inspector against your local MCP endpoint. Call <code>show_horoscope</code> with <code>{ "dob": "1990-08-15" }</code> to verify the tool response.</p>
+            </li>
+          </ol>
+
+          <h3>2. Testing on ChatGPT</h3>
+          <p>Run the MCP server in developer mode with a public HTTPS URL:</p>
+          <ul>
+            <li>Enable <strong>Developer mode</strong> in ChatGPT: Settings → Apps &amp; Connectors → Advanced settings</li>
+            <li>Build and expose your server with ngrok:
+              <pre><code>npm run start:ngrok</code></pre>
+            </li>
+            <li>Copy the printed MCP URL (e.g. <code>https://your-domain.ngrok.dev/mcp</code>)</li>
+            <li>In ChatGPT: Settings → Connectors → Create → paste the URL and save</li>
+            <li>Open a new chat, add your connector from the <strong>+</strong> menu → <strong>More</strong></li>
+            <li>Ask for your horoscope — ChatGPT will call <code>show_horoscope</code> and render the widget</li>
+            <li>After changing tools or server code, refresh the connector in Settings → Connectors</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="slide" id="slide-publishing">
+        <div class="slide__inner">
+          <h2>Publishing your App</h2>
+          <p>
+            Guidelines for submitting your MCP app to ChatGPT for review —
+            UX/UI principles, tool design, annotations, and the Platform Dashboard
+            submission flow.
+          </p>
+          <ul class="nav-list">
+            <li>
+              <a href="/publishing-your-app.html">Publishing your App</a> — overview, tool best practices, submission steps
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <section class="slide" id="slide-pages">
         <div class="slide__inner">
-          <h2>Pages</h2>
+          <h2>Important parts of code</h2>
           <ul class="nav-list">
             <li><a href="/app-tsx.html">src/App.tsx</a> — React widget, useApp, data flow</li>
             <li><a href="/widget-uri.html">WIDGET_URI</a> — what it is, why it's needed, how it links tool → UI</li>
             <li><a href="/register-app-resource.html">registerAppResource</a> — registers the React UI as an MCP resource (<code>widget.js</code>)</li>
             <li><a href="/register-app-tool.html">registerAppTool</a> — registers the horoscope tool ChatGPT calls (<code>tools/</code>)</li>
+            <li><a href="/widget-csp.html">CSP & Security</a> — domain allowlist so the sandboxed widget can load JS/CSS from your server (<code>widget.js</code>, <code>config.js</code>)</li>
           </ul>
         </div>
       </section>
@@ -101,6 +264,12 @@
               <a href="https://github.com/jsphkhan/chatgpt-app-demo" target="_blank" rel="noopener noreferrer">GitHub repository</a>
             </li>
           </ul>
+        </div>
+      </section>
+
+      <section class="slide slide--title" id="slide-thanks">
+        <div class="slide__inner slide__inner--center">
+          <h1>Thanks!</h1>
         </div>
       </section>
     </main>
@@ -140,8 +309,8 @@
       function setActive(index) {
         activeIndex = index;
         currentEl.textContent = String(index + 1);
-        prevBtn.disabled = index === 0;
-        nextBtn.disabled = index === slides.length - 1;
+        prevBtn.disabled = index === slides.length - 1;
+        nextBtn.disabled = index === 0;
         dots.forEach((dot, i) => {
           const isActive = i === index;
           dot.classList.toggle("is-active", isActive);
@@ -173,8 +342,8 @@
         });
       });
 
-      prevBtn.addEventListener("click", () => goToSlide(activeIndex - 1));
-      nextBtn.addEventListener("click", () => goToSlide(activeIndex + 1));
+      prevBtn.addEventListener("click", () => goToSlide(activeIndex + 1));
+      nextBtn.addEventListener("click", () => goToSlide(activeIndex - 1));
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -192,6 +361,95 @@
       slides.forEach((slide) => observer.observe(slide));
 
       goToSlide(getSavedSlide(), { smooth: false });
+
+      const SWIPE_THRESHOLD = 50;
+      let swipeStartY = null;
+      let swipeStartX = null;
+      let swipeTarget = null;
+      let swipePointerId = null;
+
+      function getScrollableSlideInner(target) {
+        let node = target;
+        while (node && node !== deck) {
+          if (node.classList?.contains("slide__inner")) return node;
+          node = node.parentElement;
+        }
+        return null;
+      }
+
+      function canSwipeToSlide(direction, target) {
+        const inner = getScrollableSlideInner(target);
+        if (!inner || inner.scrollHeight <= inner.clientHeight) return true;
+        const atTop = inner.scrollTop <= 1;
+        const atBottom =
+          inner.scrollTop + inner.clientHeight >= inner.scrollHeight - 1;
+        if (direction === "next") return atBottom;
+        return atTop;
+      }
+
+      function handleSwipeEnd(endY, endX) {
+        if (swipeStartY === null || swipeStartX === null) return;
+
+        const deltaY = endY - swipeStartY;
+        const deltaX = endX - swipeStartX;
+        const target = swipeTarget;
+
+        swipeStartY = null;
+        swipeStartX = null;
+        swipeTarget = null;
+        swipePointerId = null;
+
+        if (Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) return;
+
+        if (deltaY < 0) {
+          if (!canSwipeToSlide("next", target)) return;
+          goToSlide(activeIndex + 1);
+        } else {
+          if (!canSwipeToSlide("prev", target)) return;
+          goToSlide(activeIndex - 1);
+        }
+      }
+
+      deck.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length !== 1) return;
+          swipeStartY = e.touches[0].clientY;
+          swipeStartX = e.touches[0].clientX;
+          swipeTarget = e.target;
+        },
+        { passive: true }
+      );
+
+      deck.addEventListener(
+        "touchend",
+        (e) => {
+          if (swipeStartY === null) return;
+          handleSwipeEnd(e.changedTouches[0].clientY, e.changedTouches[0].clientX);
+        },
+        { passive: true }
+      );
+
+      deck.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0 || swipePointerId !== null) return;
+        swipePointerId = e.pointerId;
+        swipeStartY = e.clientY;
+        swipeStartX = e.clientX;
+        swipeTarget = e.target;
+      });
+
+      deck.addEventListener("pointerup", (e) => {
+        if (e.pointerId !== swipePointerId) return;
+        handleSwipeEnd(e.clientY, e.clientX);
+      });
+
+      deck.addEventListener("pointercancel", () => {
+        swipeStartY = null;
+        swipeStartX = null;
+        swipeTarget = null;
+        swipePointerId = null;
+      });
 
       window.addEventListener("keydown", (e) => {
         const tag = e.target.tagName;

@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Building Apps for ChatGPT — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1>Building Apps for ChatGPT</h1>
+        <p class="subtitle">
+          The four building blocks and how they connect in this demo
+        </p>
+      </header>
+
+      <!-- Building blocks -->
+      <section class="doc-section">
+        <h2>Basic building blocks</h2>
+        <p>
+          A ChatGPT app built with the Apps SDK combines four pieces. Each has a
+          distinct job; together they let the model call your backend and render
+          a rich UI inside the chat.
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Block</th><th>Role in this project</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>MCP Server</strong></td>
+              <td>
+                <code>server.js</code> — exposes tools and UI resources over
+                <code>/mcp</code> for ChatGPT to discover and call.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>UI Widget/Web Component</strong></td>
+              <td>
+                React app in <code>src/</code>, built to <code>dist/index.html</code>
+                — the horoscope card ChatGPT renders in the chat.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Bridge</strong></td>
+              <td>
+                <code>@modelcontextprotocol/ext-apps</code> —
+                <code>PostMessageTransport</code> + <code>useApp</code> connect the
+                widget iframe to ChatGPT via JSON-RPC over <code>postMessage</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Sandboxed ChatGPT iframe</strong></td>
+              <td>
+                ChatGPT hosts your widget HTML in an isolated iframe with CSP —
+                your code cannot access the parent chat DOM; it receives tool
+                results through the bridge.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>High-level overview</h3>
+        <figure class="block-diagram">
+          <pre class="diagram diagram--full">┌──────────────────────────────────────────────────────────────────────────────┐
+│                            WHAT YOU BUILD                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐ │
+│   │    MCP Server    │      │     UI Widget    │      │  Bridge (widget) │ │
+│   │    server.js     │      │  src/ → dist/    │      │  useApp +        │ │
+│   │    tools/        │      │  React horoscope │      │  PostMessage     │ │
+│   │    widget.js     │      │  card            │      │  Transport       │ │
+│   └────────┬─────────┘      └────────┬─────────┘      └────────┬─────────┘ │
+│            │                         │                         │           │
+└────────────┼─────────────────────────┼─────────────────────────┼───────────┘
+             │                         │                         │
+             │ HTTP /mcp               │ HTML resource           │ postMessage
+             │ (tools/call)            │ (registerAppResource)   │ (JSON-RPC)
+             │                         │                         │
+┌────────────▼─────────────────────────▼─────────────────────────▼───────────┐
+│                         WHAT CHATGPT PROVIDES                              │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│   ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐ │
+│   │  ChatGPT host    │      │ Sandboxed iframe │      │   Bridge (host)  │ │
+│   │  MCP client      │      │ loads widget HTML│      │  tool-input      │ │
+│   │  + model         │      │ CSP enforced     │      │  tool-result     │ │
+│   └──────────────────┘      └──────────────────┘      └──────────────────┘ │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘</pre>
+        </figure>
+      </section>
+
+      <!-- MCP Server -->
+      <section class="doc-section">
+        <h2>MCP Server</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Description</th><th>Diagram</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <p>
+                  The <strong>Model Context Protocol (MCP)</strong> server is the
+                  backend ChatGPT talks to. It advertises <strong>tools</strong>
+                  the model can call (with JSON Schema inputs/outputs) and
+                  <strong>resources</strong> (including your widget HTML).
+                </p>
+                <p>
+                  In this demo, Express serves Streamable HTTP at
+                  <code>/mcp</code>. ChatGPT sends <code>tools/call</code> and
+                  <code>resources/read</code> requests; your handlers return
+                  structured results.
+                </p>
+                <p>
+                  Reference:
+                  <a href="https://developers.openai.com/apps-sdk/concepts/mcp-server" target="_blank" rel="noopener noreferrer">MCP — Apps SDK</a>
+                </p>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">┌─────────────────────────────────┐
+│         MCP Server              │
+│         (server.js)             │
+├─────────────────────────────────┤
+│  Tools                          │
+│  ├── show_horoscope             │
+│  └── (add more tools here…)     │
+├─────────────────────────────────┤
+│  Resources                      │
+│  └── horoscope widget HTML      │
+│      (registerAppResource)      │
+└─────────────────────────────────┘
+         ▲
+         │  HTTP POST /mcp
+         │  (Streamable HTTP)
+         │
+    ChatGPT host</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- UI Widget -->
+      <section class="doc-section">
+        <h2>UI Widget</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Description</th><th>Stack in this demo</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <p>
+                  The UI widget is the visual layer inside ChatGPT — a card,
+                  form, or dashboard rendered in the sandboxed iframe after a
+                  tool runs.
+                </p>
+                <p>
+                  You can build it with <strong>React</strong> (as here), Vue,
+                  Svelte, or vanilla JS. Vite bundles your app into
+                  <code>dist/</code>; the MCP server serves that HTML and assets
+                  when ChatGPT requests the registered resource URI.
+                </p>
+                <p>
+                  The widget listens for tool events via
+                  <code>useApp</code> and updates state — e.g. skeleton on
+                  <code>ontoolinput</code>, horoscope card on
+                  <code>ontoolresult</code>.
+                </p>
+              </td>
+              <td class="code-cell">
+                <pre><code>src/App.tsx          → React UI + useApp
+src/main.tsx         → mount point
+vite build           → dist/index.html + assets/
+widget.js            → registerAppResource(...)
+ChatGPT iframe       → renders dist/index.html</code></pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Bridge -->
+      <section class="doc-section">
+        <h2>Bridge between ChatGPT &amp; your MCP server</h2>
+
+        <p>
+          The widget does not call <code>MCP server</code> directly. ChatGPT sits
+          in the middle: MCP tool calls on the server, and the Apps SDK
+          bridge inside the iframe for UI updates.
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code — <code>useApp</code> in <code>App.tsx</code></th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>import { useApp } from "@modelcontextprotocol/ext-apps/react";
+
+const { isConnected, error } = useApp({
+  appInfo: { name: "horoscope-widget", version: "0.1.0" },
+  capabilities: {},
+  onAppCreated: (app) => {
+    app.ontoolinput = () => {
+      setLoading(true);
+      setHoroscope(null);
+    };
+
+    app.ontoolresult = (result) => {
+      setLoading(false);
+      const data = result.structuredContent;
+      if (data?.sign && data.points?.length) {
+        setHoroscope(data);
+      }
+    };
+
+    app.ontoolcancelled = () => {
+      setLoading(false);
+    };
+  },
+});</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  <code>useApp</code> from
+                  <code>@modelcontextprotocol/ext-apps/react</code> is the widget-side
+                  bridge. It creates an MCP App instance, connects to ChatGPT via
+                  <code>PostMessageTransport</code> (under the hood), and exposes
+                  familiar event handlers — you never wire
+                  <code>window.postMessage</code> yourself.
+                </p>
+                <p>
+                  <strong>Two channels, one flow:</strong>
+                </p>
+                <ol>
+                  <li>
+                    <strong>MCP</strong> — ChatGPT calls
+                    <code>show_horoscope</code> on <code>server.js</code> and receives
+                    <code>structuredContent</code>
+                  </li>
+                  <li>
+                    <strong><code>useApp</code> events</strong> — ChatGPT notifies
+                    the iframe; your handlers react:
+                    <ul>
+                      <li><code>ontoolinput</code> → show skeleton</li>
+                      <li><code>ontoolresult</code> → read <code>structuredContent</code>, render card</li>
+                      <li><code>ontoolcancelled</code> → clear loading state</li>
+                    </ul>
+                  </li>
+                </ol>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <figure class="block-diagram">
+          <pre class="diagram diagram--full">User: "What's my horoscope?"
+        │
+        ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ ChatGPT host                                                             │
+│                                                                          │
+│  ① MCP ──tools/call show_horoscope──►  MCP Server (server.js)           │
+│                                                    │                     │
+│                                                    └── structuredContent │
+│                                                                          │
+│  ② useApp bridge (iframe)                                                │
+│       ontoolinput  ──────────────────────►  HoroscopeSkeleton            │
+│       ontoolresult ──────────────────────►  Horoscope card               │
+│       (via @modelcontextprotocol/ext-apps/react)                         │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Widget never calls server.js — useApp receives what ChatGPT forwards.</pre>
+        </figure>
+      </section>
+
+      <!-- registerAppTool -->
+      <section class="doc-section">
+        <h2>Registering Tools with MCP Server</h2>
+        <h3><code>registerAppTool</code></h3>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// tools/show-horoscope.tool.js
+registerAppTool(
+  server,
+  "show_horoscope",
+  {
+    title: "Show horoscope",
+    description: "Displays a personalized horoscope card…",
+    inputSchema: showHoroscopeInputSchema,
+    outputSchema: showHoroscopeOutputSchema,
+    _meta: {
+      ui: {
+        resourceUri: widgetUri,
+        csp: widgetCsp,
+      },
+    },
+  },
+  handleShowHoroscope
+);</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  Registers an action ChatGPT's model can call during
+                  conversation. The <code>description</code> tells the model
+                  when and how to use the tool; <code>inputSchema</code> defines
+                  arguments (here, <code>dob</code>).
+                </p>
+                <p>
+                  <code>_meta.ui.resourceUri</code> links this tool to the widget
+                  registered by <code>registerAppResource</code>. The handler
+                  returns text for the chat plus
+                  <code>structuredContent</code> for the UI.
+                </p>
+                <p>
+                  <a href="/register-app-tool.html">Full registerAppTool docs →</a>
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- registerAppResource -->
+      <section class="doc-section">
+        <h2>Registering UI Resources with MCP Server</h2>
+        <h3><code>registerAppResource</code></h3>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// widget.js
+registerAppResource(
+  server,
+  "horoscope-widget",
+  WIDGET_URI,
+  { _meta: { ui: { csp } } },
+  async () => ({
+    contents: [
+      {
+        uri: WIDGET_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: widgetHtml,
+        _meta: { ui: { csp } },
+      },
+    ],
+  })
+);</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  Publishes your built React HTML as an MCP resource ChatGPT can
+                  fetch. When a tool points to <code>WIDGET_URI</code>, ChatGPT
+                  calls this callback and receives <code>dist/index.html</code>
+                  (with asset URLs rewritten to your public server).
+                </p>
+                <p>
+                  CSP in <code>_meta.ui</code> whitelists domains the sandboxed
+                  iframe may load scripts and styles from (your ngrok host in
+                  dev).
+                </p>
+                <p>
+                  <a href="/register-app-resource.html">Full registerAppResource docs →</a>
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Related -->
+      <section class="doc-section">
+        <h2>Related</h2>
+        <ul class="nav-list">
+          <li><a href="/widget-uri.html">WIDGET_URI</a> — links tool → UI</li>
+          <li><a href="/app-tsx.html">src/App.tsx</a> — widget bridge and events</li>
+          <li>
+            <a href="https://developers.openai.com/apps-sdk/concepts/mcp-server" target="_blank" rel="noopener noreferrer">OpenAI — MCP Server concept</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

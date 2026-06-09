@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSP — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1>Content Security Policy (CSP)</h1>
+        <p class="subtitle">
+          How the sandboxed widget is allowed to load scripts and assets from your server
+        </p>
+      </header>
+
+      <section class="doc-section">
+        <h2>What is CSP?</h2>
+        <p>
+          <strong>Content Security Policy (CSP)</strong> is a browser security
+          mechanism that restricts what a web page can load and connect to — which
+          scripts, stylesheets, images, and network endpoints are permitted.
+        </p>
+        <p>
+          ChatGPT renders MCP App widgets inside a <strong>sandboxed iframe</strong>.
+          By default that sandbox blocks all external origins. Your server must
+          declare an allowlist so the widget can load its JS/CSS bundle and, if
+          needed, call your APIs at runtime.
+        </p>
+      </section>
+
+      <!-- widget.js -->
+      <section class="doc-section">
+        <h2>Where CSP is attached — <code>widget.js</code></h2>
+        <p>
+          Before calling <code>registerAppResource</code>, the server builds a CSP
+          object once and passes it in two places on the resource registration.
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// widget.js
+const csp = getWidgetCsp();
+
+registerAppResource(
+  server,
+  "horoscope-widget",
+  WIDGET_URI,
+  { _meta: { ui: { csp } } },
+  async () => ({
+    contents: [
+      {
+        uri: WIDGET_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: widgetHtml,
+        _meta: { ui: { csp } },
+      },
+    ],
+  })
+);</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  <code>getWidgetCsp()</code> (from <code>config.js</code>) returns
+                  the domain allowlist. The same <code>csp</code> object is attached:
+                </p>
+                <ol>
+                  <li>
+                    On the <strong>resource listing</strong> — the 4th argument to
+                    <code>registerAppResource</code>
+                  </li>
+                  <li>
+                    On the <strong>content item</strong> — inside the
+                    <code>contents</code> array returned by the callback
+                  </li>
+                </ol>
+                <p>
+                  ChatGPT applies the content-level CSP when it fetches and renders
+                  the HTML. Both use the same object in this demo so listing and
+                  fetch stay in sync.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- resourceDomains vs connectDomains -->
+      <section class="doc-section">
+        <h2>What are <code>resourceDomains</code> and <code>connectDomains</code>?</h2>
+        <p>
+          ChatGPT runs your widget in a sandboxed iframe with a restrictive
+          Content Security Policy. The <code>_meta.ui.csp</code> object tells the
+          host which external origins the widget is allowed to use. The two main
+          fields control different kinds of access:
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>What it allows</th>
+              <th>CSP mapping</th>
+              <th>Example in this app</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>resourceDomains</code></td>
+              <td>
+                Loading <strong>static assets</strong> — JavaScript bundles,
+                CSS, images, fonts, media referenced by
+                <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>,
+                <code>&lt;img&gt;</code>, etc.
+              </td>
+              <td>
+                Maps to directives like <code>script-src</code>,
+                <code>style-src</code>, <code>img-src</code>,
+                <code>font-src</code>, <code>media-src</code>
+              </td>
+              <td>
+                Required here. After <code>loadWidgetHtml()</code> rewrites paths,
+                the iframe loads
+                <code>https://your-domain.ngrok.dev/assets/index-*.js</code> and
+                <code>*.css</code>. Without your server origin in
+                <code>resourceDomains</code>, those requests are blocked and the
+                widget stays blank.
+              </td>
+            </tr>
+            <tr>
+              <td><code>connectDomains</code></td>
+              <td>
+                <strong>Runtime network requests</strong> from JavaScript —
+                <code>fetch()</code>, <code>XMLHttpRequest</code>, WebSockets
+              </td>
+              <td>Maps to <code>connect-src</code></td>
+              <td>
+                Not used by the horoscope widget today (data comes from ChatGPT
+                via <code>ontoolresult</code>, not a direct API call). Included
+                so the same CSP works if you later add client-side requests to
+                your server (e.g. <code>fetch("https://your-domain.ngrok.dev/api/…")</code>).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Rule of thumb</th><th>Use this field</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Widget loads a JS/CSS file or image from a URL</td>
+              <td><code>resourceDomains</code></td>
+            </tr>
+            <tr>
+              <td>Widget calls an API with <code>fetch()</code> or opens a WebSocket</td>
+              <td><code>connectDomains</code></td>
+            </tr>
+            <tr>
+              <td>Same origin does both (e.g. API + static assets on one host)</td>
+              <td>Add that origin to <strong>both</strong> arrays — as this demo does</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          Official reference:
+          <a href="https://developers.openai.com/apps-sdk/reference" target="_blank" rel="noopener noreferrer">Apps SDK — <code>_meta.ui.csp</code></a>.
+          There is also an optional <code>frameDomains</code> for embedding nested
+          iframes; this horoscope app does not use it.
+        </p>
+      </section>
+
+      <!-- Tool level -->
+      <section class="doc-section">
+        <h2>CSP on the tool as well</h2>
+        <p>
+          The same CSP object is passed into
+          <code>registerShowHoroscopeTool</code> as <code>widgetCsp</code> and
+          set on <code>_meta.ui.csp</code> alongside
+          <code>resourceUri</code>. That tells ChatGPT the allowed domains
+          <em>before</em> it fetches the widget HTML when the tool runs. See
+          <a href="/register-app-tool.html">registerAppTool docs</a>.
+        </p>
+      </section>
+
+      <section class="doc-section">
+        <h2>References</h2>
+        <a target="_blank" rel="noopener noreferrer" href="https://dev.to/infoxicator/i-reverse-engineered-chatgpt-apps-iframe-sandbox-2ok3">ChatGPT Apps iframe sandbox</a>
+      </section>
+    </div>
+  </body>
+</html>
