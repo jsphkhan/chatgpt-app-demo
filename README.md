@@ -39,20 +39,25 @@ sequenceDiagram
     participant MCP as MCP Server<br/>(server.js)
     participant Widget as React Widget<br/>(dist/index.html)
 
-    User->>ChatGPT: "My name is Alex"
-    ChatGPT->>MCP: tools/call say_hello { name: "Alex" }
-    MCP-->>ChatGPT: { greeting: "Hello Alex!", name: "Alex" }
+    User->>ChatGPT: "What's my horoscope?"
+    ChatGPT->>User: Asks for date of birth (YYYY-MM-DD)
+    User->>ChatGPT: "1990-08-15"
+    ChatGPT->>MCP: tools/call show_horoscope { dob: "1990-08-15" }
+    ChatGPT->>Widget: ui/notifications/tool-input
+    Note over Widget: Skeleton loading
+    MCP-->>ChatGPT: structuredContent { sign, mood, points }
     ChatGPT->>Widget: ui/notifications/tool-result
-    Widget-->>User: Shows "Hello Alex!" in iframe
+    Widget-->>User: Horoscope card in iframe
 ```
 
 **Flow in plain English:**
 
 1. **You** add this app as a connector in ChatGPT (Settings → Connectors).
-2. **ChatGPT** reads the `say_hello` tool definition from the MCP server.
-3. When you share your name, **ChatGPT** calls `say_hello` with your name.
-4. The **MCP server** returns a text reply and `structuredContent` for the UI.
-5. The **React widget** receives the result via the MCP Apps bridge and displays the greeting.
+2. **ChatGPT** reads the `show_horoscope` tool definition from the MCP server.
+3. When you ask for your horoscope, **ChatGPT** asks for your date of birth (YYYY-MM-DD).
+4. **ChatGPT** calls `show_horoscope` with your DOB; the widget shows a loading skeleton.
+5. The **MCP server** returns a text reply and `structuredContent` (`sign`, `mood`, `points`, etc.).
+6. The **React widget** receives the result via the MCP Apps bridge and displays the horoscope card.
 
 ## Prerequisites
 

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WIDGET_URI — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1><code>WIDGET_URI</code></h1>
+        <p class="subtitle">
+          The ID that links your MCP tool to the React UI
+        </p>
+      </header>
+
+      <p>
+        <code>WIDGET_URI</code> is defined in <code>config.js</code> and used
+        across the server to tell ChatGPT which UI to render when a tool runs.
+      </p>
+
+      <!-- What is it -->
+      <section class="doc-section">
+        <h2>What is <code>WIDGET_URI</code>?</h2>
+        <p>
+          It is the <strong>ID of your React UI</strong> in the MCP system — not
+          a real web address you visit in a browser.
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// config.js
+export const WIDGET_URI = "ui://widget/horoscope.html";</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  The constant defined in <code>config.js</code> — the ID ChatGPT
+                  uses to look up your widget UI.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th>Part</th>
+              <th>What it means</th>
+            </tr>
+            <tr>
+              <td><code>ui://</code></td>
+              <td>
+                MCP Apps convention — signals "this is a UI resource", not a
+                normal <code>https://</code> URL.
+              </td>
+            </tr>
+            <tr>
+              <td><code>widget/horoscope.html</code></td>
+              <td>
+                A label you choose. It does <em>not</em> need to match a real
+                file path on disk. Your actual HTML lives in
+                <code>dist/index.html</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Why needed -->
+      <section class="doc-section">
+        <h2>Why is it needed?</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>How it links tool → UI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <p>ChatGPT needs two separate pieces:</p>
+                <ol>
+                  <li>
+                    <strong>A tool</strong> — <code>show_horoscope</code> (what
+                    the model calls with the user's DOB)
+                  </li>
+                  <li>
+                    <strong>A UI resource</strong> — the React card (what gets
+                    rendered in the iframe)
+                  </li>
+                </ol>
+                <p>
+                  <code>WIDGET_URI</code> is the string that
+                  <strong>links them together</strong>. When the tool runs,
+                  ChatGPT looks up the UI registered at this URI and renders it.
+                </p>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  The tool's <code>resourceUri</code> must match the URI
+                  registered by <code>registerAppResource</code>. Both use the
+                  same <code>WIDGET_URI</code> constant from
+                  <code>config.js</code>.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Tool points to the URI</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// tools/show-horoscope.tool.js
+_meta: {
+  ui: {
+    resourceUri: widgetUri,  // "ui://widget/horoscope.html"
+    csp: widgetCsp,
+  },
+}</code></pre>
+              </td>
+              <td class="desc-cell">
+                Tells ChatGPT: <em>"After calling this tool, render the UI
+                registered at <code>ui://widget/horoscope.html</code>."</em>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Server registers HTML at that URI</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// widget.js
+registerAppResource(
+  server,
+  "horoscope-widget",
+  WIDGET_URI,
+  { _meta: { ui: { csp } } },
+  async () => ({
+    contents: [
+      {
+        uri: WIDGET_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: widgetHtml,
+        _meta: { ui: { csp } },
+      },
+    ],
+  })
+);</code></pre>
+              </td>
+              <td class="desc-cell">
+                Registers your built React HTML <strong>at</strong> that URI. When
+                ChatGPT requests <code>ui://widget/horoscope.html</code>, this
+                callback returns <code>dist/index.html</code> content.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Flow diagram -->
+      <section class="doc-section">
+        <h2>How it flows</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Diagram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <ol>
+                  <li>User asks for horoscope in ChatGPT</li>
+                  <li>ChatGPT calls <code>show_horoscope</code> tool</li>
+                  <li>
+                    Tool metadata says:
+                    <code>resourceUri = "ui://widget/horoscope.html"</code>
+                  </li>
+                  <li>
+                    ChatGPT requests that resource from your MCP server
+                  </li>
+                  <li><code>widget.js</code> returns the built HTML for that URI</li>
+                  <li>Horoscope card appears in the chat iframe</li>
+                </ol>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">show_horoscope tool runs
+        │
+        ▼
+Tool says: resourceUri = "ui://widget/horoscope.html"
+        │
+        ▼
+ChatGPT calls resources/read for that URI
+        │
+        ▼
+widget.js callback runs → returns widgetHtml (dist/index.html)
+        │
+        ▼
+ChatGPT renders it in an iframe inside the chat
+        │
+        ▼
+React app loads → skeleton → horoscope card</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Where used -->
+      <section class="doc-section">
+        <h2>Where it's used</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>config.js</code></td>
+              <td>Defines the constant</td>
+            </tr>
+            <tr>
+              <td><code>widget.js</code></td>
+              <td>Registers the HTML <strong>at</strong> this URI</td>
+            </tr>
+            <tr>
+              <td><code>tools/show-horoscope.tool.js</code></td>
+              <td>Points the tool <strong>to</strong> this URI via <code>resourceUri</code></td>
+            </tr>
+            <tr>
+              <td><code>server.js</code></td>
+              <td>Passes <code>WIDGET_URI</code> into the tool registration</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          <strong>Important:</strong> all files must use the
+          <em>same</em> string. If they differ, ChatGPT won't know which UI to
+          show.
+        </p>
+      </section>
+
+      <!-- Analogy -->
+      <section class="doc-section">
+        <h2>Analogy</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Concept</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>WIDGET_URI</code></td>
+              <td>
+                Like a function name in code — an identifier ChatGPT uses to
+                look up your widget.
+              </td>
+            </tr>
+            <tr>
+              <td><code>dist/index.html</code></td>
+              <td>
+                The actual file on disk — the real HTML content returned when
+                ChatGPT asks for that URI.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          <strong>One-line summary:</strong> <code>WIDGET_URI</code> is the name.
+          <code>dist/index.html</code> is the content ChatGPT gets when it asks
+          for that name.
+        </p>
+      </section>
+    </div>
+  </body>
+</html>

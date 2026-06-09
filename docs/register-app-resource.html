@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>registerAppResource — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1><code>registerAppResource</code></h1>
+        <p class="subtitle">
+          Registers your React UI as an MCP resource ChatGPT can render
+        </p>
+      </header>
+
+      <p>
+        Defined in <code>widget.js</code>. This function tells ChatGPT:
+        <em>"I have a UI at this URI — when you need it, here's the HTML to
+        display, and here are the domains it's allowed to load scripts
+        from."</em>
+      </p>
+
+      <!-- Main code -->
+      <section class="doc-section">
+        <h2>What does <code>registerAppResource</code> do?</h2>
+        <p>
+          It registers your built React HTML as a fetchable MCP resource and
+          configures CSP so the widget can load JS/CSS from your server.
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// widget.js
+registerAppResource(
+  server,
+  "horoscope-widget",
+  WIDGET_URI,
+  { _meta: { ui: { csp } } },
+  async () => ({
+    contents: [
+      {
+        uri: WIDGET_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: widgetHtml,
+        _meta: { ui: { csp } },
+      },
+    ],
+  })
+);</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  Registers your built React HTML as a fetchable MCP resource and
+                  configures CSP so the widget can load JS/CSS from your server.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th>Argument</th>
+              <th>What it means</th>
+            </tr>
+            <tr>
+              <td><code>server</code></td>
+              <td>The MCP server instance — where this resource gets attached.</td>
+            </tr>
+            <tr>
+              <td><code>"horoscope-widget"</code></td>
+              <td>Human-readable name shown in MCP resource lists.</td>
+            </tr>
+            <tr>
+              <td><code>WIDGET_URI</code></td>
+              <td>
+                Unique ID ChatGPT uses to request this UI
+                (<code>ui://widget/horoscope.html</code>). See
+                <a href="/widget-uri.html">WIDGET_URI docs</a>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>{ _meta: { ui: { csp } } }</code></td>
+              <td>
+                Security rules — which domains the widget is allowed to load
+                JS/CSS from (your ngrok host).
+              </td>
+            </tr>
+            <tr>
+              <td><code>async () => ({ contents: [...] })</code></td>
+              <td>
+                Callback that runs when ChatGPT <strong>requests</strong> the
+                resource. Returns the actual HTML.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Callback return -->
+      <section class="doc-section">
+        <h2>What the callback returns</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>uri</code></td>
+              <td>Confirms which resource this is (<code>WIDGET_URI</code>).</td>
+            </tr>
+            <tr>
+              <td><code>mimeType</code></td>
+              <td>
+                <code>text/html;profile=mcp-app</code> — tells ChatGPT this is
+                an MCP App widget, not plain HTML.
+              </td>
+            </tr>
+            <tr>
+              <td><code>text</code></td>
+              <td>
+                The actual HTML from <code>dist/index.html</code> (your built
+                React app, with asset URLs rewritten to your public server).
+              </td>
+            </tr>
+            <tr>
+              <td><code>_meta.ui.csp</code></td>
+              <td>
+                CSP on the content item itself — takes precedence over the
+                listing-level CSP.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- CSP twice -->
+      <section class="doc-section">
+        <h2>Why does CSP appear twice?</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>{ _meta: { ui: { csp } } }        // on the resource listing
+_meta: { ui: { csp } }            // on the content item</code></pre>
+              </td>
+              <td class="desc-cell">
+                <ul>
+                  <li>
+                    <strong>First (listing):</strong> default CSP ChatGPT sees
+                    when browsing available resources.
+                  </li>
+                  <li>
+                    <strong>Second (content):</strong> CSP ChatGPT
+                    <em>actually applies</em> when it fetches the HTML.
+                  </li>
+                </ul>
+                <p>
+                  In this project both use the same <code>csp</code> object — they
+                  allow your ngrok domain to serve widget assets.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Flow -->
+      <section class="doc-section">
+        <h2>The full flow</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Diagram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <ol>
+                  <li><code>show_horoscope</code> tool runs in ChatGPT</li>
+                  <li>
+                    Tool metadata points to
+                    <code>resourceUri = WIDGET_URI</code>
+                  </li>
+                  <li>ChatGPT calls <code>resources/read</code> for that URI</li>
+                  <li>This callback runs and returns <code>widgetHtml</code></li>
+                  <li>ChatGPT renders the HTML in an iframe inside the chat</li>
+                  <li>React app loads → skeleton → horoscope card</li>
+                </ol>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">show_horoscope tool runs
+        │
+        ▼
+ChatGPT requests resource at WIDGET_URI
+        │
+        ▼
+registerAppResource callback fires
+        │
+        ▼
+Returns widgetHtml (dist/index.html) + CSP
+        │
+        ▼
+ChatGPT renders iframe → React widget loads</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Summary -->
+      <section class="doc-section">
+        <h2>One-line summary</h2>
+        <p>
+          <code>registerAppResource</code> publishes your built React HTML as a
+          fetchable MCP resource and tells ChatGPT which external domains the
+          widget is allowed to use.
+        </p>
+        <p>
+          Related:
+          <a href="/register-app-tool.html">registerAppTool</a> ·
+          <a href="/widget-uri.html">WIDGET_URI</a>
+        </p>
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>src/App.tsx — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1>src/App.tsx</h1>
+        <p class="subtitle">React widget rendered inside ChatGPT's iframe</p>
+      </header>
+
+      <p>
+        This file is the UI layer. It connects to ChatGPT via
+        <code>useApp</code>, listens for tool events, and renders the horoscope
+        card (or a loading skeleton).
+      </p>
+
+      <!-- useApp -->
+      <section class="doc-section">
+        <h2>What does <code>useApp</code> do?</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>const { isConnected, error } = useApp({
+  appInfo: { name: "horoscope-widget", version: "0.1.0" },
+  capabilities: {},
+  onAppCreated: (app) => {
+    app.ontoolinput = () => { ... };
+    app.ontoolresult = (result) => { ... };
+    app.ontoolcancelled = () => { ... };
+  },
+});</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  Creates an MCP App instance and connects it to ChatGPT over
+                  <code>postMessage</code> (your widget runs in an iframe;
+                  ChatGPT is the parent window).
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th>Part</th>
+              <th>What it means</th>
+            </tr>
+            <tr>
+              <td><code>useApp</code></td>
+              <td>
+                React hook that creates an <code>App</code> instance and connects
+                it to ChatGPT via <code>PostMessageTransport</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>isConnected</code></td>
+              <td>
+                <code>true</code> once the MCP Apps handshake with ChatGPT
+                completes. Show a connecting state until then.
+              </td>
+            </tr>
+            <tr>
+              <td><code>error</code></td>
+              <td>
+                Set if the connection fails (timeout, handshake error, etc.).
+              </td>
+            </tr>
+            <tr>
+              <td><code>appInfo</code></td>
+              <td>Name and version of this widget — sent during initialization.</td>
+            </tr>
+            <tr>
+              <td><code>onAppCreated</code></td>
+              <td>
+                Callback to register event handlers <em>before</em> the connection
+                finishes. This is where you wire up tool listeners.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Data flow -->
+      <section class="doc-section">
+        <h2>How data gets from tool → UI</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Diagram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <ol>
+                  <li>User asks for horoscope in ChatGPT</li>
+                  <li>
+                    ChatGPT calls <code>show_horoscope</code> on your MCP server
+                    (<code>server.js</code> → <code>tools/</code>)
+                  </li>
+                  <li>
+                    Tool handler returns:
+                    <code>structuredContent: { sign, mood, points, ... }</code>
+                  </li>
+                  <li>ChatGPT receives that result</li>
+                  <li>ChatGPT notifies your widget iframe</li>
+                  <li><code>app.ontoolresult</code> fires in the widget</li>
+                  <li>
+                    You read <code>result.structuredContent</code> and update
+                    React state
+                  </li>
+                </ol>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">┌─────────────┐     MCP tool call      ┌──────────────┐
+│   ChatGPT   │ ─────────────────────► │  server.js   │
+│   (host)    │                        │  + tools/    │
+└─────────────┘                        └──────────────┘
+       │                                        │
+       │  postMessage notification              │ structuredContent
+       │  (ontoolresult)                        │ in tool response
+       ▼                                        │
+┌─────────────┐ ◄──────────────────────────────┘
+│  React UI   │   useApp maintains the bridge
+│  (iframe)   │   ontoolresult receives the data
+└─────────────┘</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Event handlers -->
+      <section class="doc-section">
+        <h2>Event handlers</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>app.ontoolinput = () => {
+  setLoading(true);
+  setHoroscope(null);
+};</code></pre>
+              </td>
+              <td class="desc-cell">
+                Fires when ChatGPT <em>starts</em> calling the tool. Show the
+                skeleton and clear any previous horoscope.
+              </td>
+            </tr>
+            <tr>
+              <td class="code-cell">
+                <pre><code>app.ontoolresult = (result) => {
+  setLoading(false);
+  const data = result.structuredContent;
+  if (data?.sign && data.points?.length) {
+    setHoroscope(data);
+  }
+};</code></pre>
+              </td>
+              <td class="desc-cell">
+                Fires when the tool returns. Read
+                <code>structuredContent</code> from the server and store it in
+                React state to render the card.
+              </td>
+            </tr>
+            <tr>
+              <td class="code-cell">
+                <pre><code>app.ontoolcancelled = () => {
+  setLoading(false);
+};</code></pre>
+              </td>
+              <td class="desc-cell">
+                Fires if the tool call is cancelled. Hide the loading skeleton.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- UI states -->
+      <section class="doc-section">
+        <h2>UI states</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Condition</th>
+              <th>What renders</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>error</code></td>
+              <td>Connection error message</td>
+            </tr>
+            <tr>
+              <td><code>!isConnected</code></td>
+              <td>"Connecting to ChatGPT…"</td>
+            </tr>
+            <tr>
+              <td><code>loading</code></td>
+              <td><code>HoroscopeSkeleton</code> — shimmer placeholders</td>
+            </tr>
+            <tr>
+              <td><code>!horoscope</code></td>
+              <td>Empty state — prompt user to ask ChatGPT</td>
+            </tr>
+            <tr>
+              <td><code>horoscope</code> set</td>
+              <td>Full horoscope card with sign, mood, and insight points</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Other ways -->
+      <section class="doc-section">
+        <h2>Other ways to do this</h2>
+
+        <h3>1. Vanilla JS (same SDK, no React)</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>import { App, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
+
+const app = new App({
+  appInfo: { name: "horoscope-widget", version: "0.1.0" },
+});
+
+app.ontoolresult = (result) => {
+  const { sign, mood } = result.structuredContent;
+  document.getElementById("sign").textContent = sign;
+};
+
+await app.connect(new PostMessageTransport(window.parent));</code></pre>
+              </td>
+              <td class="desc-cell">
+                Same MCP Apps protocol and <code>ontoolresult</code> events — just
+                without the React hook. You manage the DOM yourself.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2. Raw <code>postMessage</code> (OpenAI quickstart style)</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// JSON-RPC over window.parent.postMessage
+await rpcRequest("ui/initialize", { appInfo, protocolVersion });
+rpcNotify("ui/notifications/initialized", {});
+
+window.addEventListener("message", (event) => {
+  if (event.data?.method === "ui/notifications/tool-result") {
+    updateFromResponse(event.data.params);
+  }
+});</code></pre>
+              </td>
+              <td class="desc-cell">
+                Hand-rolled bridge with no SDK. More code, but shows exactly what
+                <code>useApp</code> does under the hood.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3. Legacy ChatGPT Skybridge (older pattern)</h3>
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// ChatGPT-specific — not MCP Apps standard
+const toolOutput = useOpenAiGlobal("toolOutput");</code></pre>
+              </td>
+              <td class="desc-cell">
+                Some older ChatGPT widgets read <code>window.openai.toolOutput</code>
+                directly. This project uses the open MCP Apps standard via
+                <code>@modelcontextprotocol/ext-apps</code> instead.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </body>
+</html>

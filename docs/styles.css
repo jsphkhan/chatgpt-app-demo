@@ -1,0 +1,359 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f8f9fc;
+  --surface: #ffffff;
+  --text: #1a1a2e;
+  --muted: #5c6370;
+  --border: #e2e6ef;
+  --accent: #5b4fe8;
+  --code-bg: #f1f3f8;
+  --diagram-bg: #f6f7fb;
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, Monaco,
+    Consolas, "Liberation Mono", monospace;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --text: #eef0f6;
+    --muted: #9aa3b2;
+    --border: #2a3040;
+    --accent: #8b83ff;
+    --code-bg: #12151e;
+    --diagram-bg: #12151e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+header.site-header {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+header.site-header a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+header.site-header a:hover {
+  text-decoration: underline;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+h2 {
+  margin: 40px 0 12px;
+  font-size: 1.35rem;
+}
+
+h3 {
+  margin: 24px 0 8px;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+p,
+ul,
+ol {
+  color: var(--muted);
+}
+
+ul,
+ol {
+  padding-left: 1.25rem;
+}
+
+.doc-section {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.doc-section > p:first-of-type {
+  margin-top: 0;
+}
+
+/* ── Tables: 2-column Code | Description ── */
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.95rem;
+  table-layout: fixed;
+}
+
+.doc-table th,
+.doc-table td {
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.doc-table thead th {
+  background: var(--code-bg);
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+}
+
+.doc-table--split thead th,
+.doc-table--split tbody td {
+  width: 50%;
+}
+
+.doc-table--split td.code-cell {
+  padding: 0;
+  background: var(--code-bg);
+}
+
+.doc-table--split td.code-cell pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  min-height: 100%;
+  max-height: 420px;
+}
+
+.doc-table--split td.desc-cell {
+  color: var(--muted);
+}
+
+.doc-table--split td.desc-cell p {
+  margin: 0 0 0.75em;
+}
+
+.doc-table--split td.desc-cell p:last-child {
+  margin-bottom: 0;
+}
+
+.doc-table--split td.desc-cell ul,
+.doc-table--split td.desc-cell ol {
+  margin: 0;
+}
+
+/* Inline code in first column (argument tables) */
+.doc-table--split tbody td:first-child:not(.code-cell):not(.desc-cell) {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--code-bg);
+}
+
+.doc-table--split tbody td:first-child:not(.code-cell):not(.desc-cell) code {
+  font-size: inherit;
+}
+
+/* Single-column tables (full-width content) */
+.doc-table--full td {
+  color: var(--muted);
+}
+
+/* ── Code blocks ── */
+
+pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  max-height: 420px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  tab-size: 2;
+  -webkit-font-smoothing: antialiased;
+}
+
+pre code {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: color-mix(in srgb, var(--code-bg) 80%, var(--border));
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+.diagram {
+  margin: 0;
+  padding: 16px;
+  background: var(--diagram-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre;
+  overflow: auto;
+  max-height: 420px;
+}
+
+.doc-table--split td.code-cell .diagram {
+  border: none;
+  border-radius: 0;
+  max-height: 420px;
+}
+
+/* ── Nav & misc ── */
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+}
+
+.nav-list li {
+  margin-bottom: 10px;
+}
+
+.nav-list a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav-list a:hover {
+  text-decoration: underline;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 999px;
+}
+
+.flow-diagram {
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.flow-diagram img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.mermaid-diagram {
+  overflow-x: auto;
+}
+
+.mermaid-diagram .mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 20px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.mermaid-diagram pre.mermaid {
+  font-family: var(--font-mono);
+  font-size: 0;
+  background: transparent;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .doc-table--split thead {
+    display: none;
+  }
+
+  .doc-table--split tbody tr {
+    display: block;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .doc-table--split tbody td {
+    display: block;
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .doc-table--split tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .doc-table--split tbody td.code-cell::before {
+    content: "Code";
+    display: block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    padding: 8px 14px 0;
+  }
+
+  .doc-table--split tbody td.desc-cell::before {
+    content: "Description";
+    display: block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    padding: 8px 14px 0;
+  }
+}

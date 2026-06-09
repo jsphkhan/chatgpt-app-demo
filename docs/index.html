@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>chatgpt-app-demo — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <h1>ChatGPT Apps Demo - June 9, 2026</h1>
+      </header>
+
+      <p>
+        These docs explain how the codebase works. They run locally via
+        <code>npm run docs</code> and are not part of the production build.
+      </p>
+
+      <h2>High Level Flow</h2>
+      <figure class="flow-diagram">
+        <img
+          src="/images/1776242502152.jpeg"
+          alt="High level flow diagram for the ChatGPT horoscope app"
+          width="900"
+        />
+      </figure>
+
+      <h2>Data flow</h2>
+      <figure class="flow-diagram mermaid-diagram">
+        <pre class="mermaid">sequenceDiagram
+    participant User
+    participant ChatGPT
+    participant MCP as MCP Server&lt;br/&gt;(server.js)
+    participant Widget as React Widget&lt;br/&gt;(dist/index.html)
+
+    User-&gt;&gt;ChatGPT: "What's my horoscope?"
+    ChatGPT-&gt;&gt;User: Asks for date of birth (YYYY-MM-DD)
+    User-&gt;&gt;ChatGPT: "1990-08-15"
+    ChatGPT-&gt;&gt;MCP: tools/call show_horoscope { dob: "1990-08-15" }
+    ChatGPT-&gt;&gt;Widget: ui/notifications/tool-input
+    Note over Widget: Skeleton loading
+    MCP--&gt;&gt;ChatGPT: structuredContent { sign, mood, points }
+    ChatGPT-&gt;&gt;Widget: ui/notifications/tool-result
+    Widget--&gt;&gt;User: Horoscope card in iframe</pre>
+      </figure>
+
+      <h2>Pages</h2>
+      <ul class="nav-list">
+        <li><a href="/app-tsx.html">src/App.tsx</a> — React widget, useApp, data flow</li>
+        <li><a href="/widget-uri.html">WIDGET_URI</a> — what it is, why it's needed, how it links tool → UI</li>
+        <li><a href="/register-app-resource.html">registerAppResource</a> — registers the React UI as an MCP resource (<code>widget.js</code>)</li>
+        <li><a href="/register-app-tool.html">registerAppTool</a> — registers the horoscope tool ChatGPT calls (<code>tools/</code>)</li>
+      </ul>
+
+      <h2>Code repo</h2>
+      <ul class="nav-list">
+        <li>
+          <a href="https://github.com/jsphkhan/chatgpt-app-demo">GitHub repository</a>
+        </li>
+      </ul>
+    </div>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: prefersDark ? "dark" : "neutral",
+        sequence: { useMaxWidth: true },
+      });
+    </script>
+  </body>
+</html>

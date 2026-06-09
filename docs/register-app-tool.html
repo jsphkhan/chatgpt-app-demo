@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>registerAppTool — Code Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site-header">
+        <a href="/">← All docs</a>
+        <h1><code>registerAppTool</code></h1>
+        <p class="subtitle">
+          Registers a tool ChatGPT can call — and links it to your UI
+        </p>
+      </header>
+
+      <p>
+        Defined in <code>tools/show-horoscope.tool.js</code>. This function
+        exposes the <code>show_horoscope</code> capability to ChatGPT: what to
+        call it, what inputs it needs, what UI to show, and what code runs when
+        invoked.
+      </p>
+
+      <!-- Main code -->
+      <section class="doc-section">
+        <h2>What does <code>registerAppTool</code> do?</h2>
+        <p>
+          It registers an MCP tool that ChatGPT's model can call during a
+          conversation, and attaches UI metadata so the horoscope card renders
+          after the tool returns.
+        </p>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>// tools/show-horoscope.tool.js
+registerAppTool(
+  server,
+  "show_horoscope",
+  {
+    title: "Show horoscope",
+    description:
+      "Displays a personalized horoscope card based on the user's date of birth. " +
+      "When the user asks for their horoscope, first ask for their date of birth (YYYY-MM-DD), " +
+      "then call this tool with their DOB.",
+    inputSchema: showHoroscopeInputSchema,
+    outputSchema: showHoroscopeOutputSchema,
+    _meta: {
+      ui: {
+        resourceUri: widgetUri,
+        csp: widgetCsp,
+      },
+    },
+  },
+  handleShowHoroscope
+);</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>
+                  Registers an MCP tool that ChatGPT's model can call during a
+                  conversation, and attaches UI metadata so the horoscope card
+                  renders after the tool returns.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <th>Argument</th>
+              <th>What it means</th>
+            </tr>
+            <tr>
+              <td><code>server</code></td>
+              <td>The MCP server instance to attach this tool to.</td>
+            </tr>
+            <tr>
+              <td><code>"show_horoscope"</code></td>
+              <td>
+                Tool identifier — ChatGPT calls this name when invoking the
+                tool.
+              </td>
+            </tr>
+            <tr>
+              <td><code>title</code></td>
+              <td>Short human-readable label for the tool.</td>
+            </tr>
+            <tr>
+              <td><code>description</code></td>
+              <td>
+                <strong>Instructions for the LLM.</strong> Tells ChatGPT when
+                and how to use this tool — here, ask for DOB first, then call
+                with <code>YYYY-MM-DD</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>inputSchema</code></td>
+              <td>
+                Zod schema defining the tool input — in this case
+                <code>dob</code> (date of birth string).
+              </td>
+            </tr>
+            <tr>
+              <td><code>outputSchema</code></td>
+              <td>
+                Zod schema describing the structured output returned to the UI
+                (<code>sign</code>, <code>mood</code>, <code>points</code>,
+                etc.).
+              </td>
+            </tr>
+            <tr>
+              <td><code>_meta.ui.resourceUri</code></td>
+              <td>
+                Links this tool to the widget registered by
+                <a href="/register-app-resource.html">registerAppResource</a>.
+                Must match <code>WIDGET_URI</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>_meta.ui.csp</code></td>
+              <td>CSP domains allowed for the linked widget.</td>
+            </tr>
+            <tr>
+              <td><code>handleShowHoroscope</code></td>
+              <td>
+                Async handler — runs on your server when ChatGPT calls the
+                tool. Returns text + <code>structuredContent</code> for the UI.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Handler return -->
+      <section class="doc-section">
+        <h2>What the handler returns</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr><th>Code</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code-cell">
+                <pre><code>return {
+  content: [
+    { type: "text", text: `${horoscope.symbol} ${horoscope.sign}: ${horoscope.mood}` },
+  ],
+  structuredContent: horoscope,
+};</code></pre>
+              </td>
+              <td class="desc-cell">
+                <p>The handler returns two payloads:</p>
+                <ul>
+                  <li>
+                    <strong><code>content</code></strong> — text reply ChatGPT
+                    shows in the conversation (e.g. "♌ Leo: Cosmic energy favors
+                    bold moves today.").
+                  </li>
+                  <li>
+                    <strong><code>structuredContent</code></strong> — data for
+                    the React widget, read in <code>App.tsx</code> via
+                    <code>app.ontoolresult</code> →
+                    <code>result.structuredContent</code>.
+                  </li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Tool vs Resource -->
+      <section class="doc-section">
+        <h2>Tool vs resource — how they work together</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Diagram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="desc-cell">
+                <p><strong><code>registerAppTool</code></strong> defines
+                <em>what ChatGPT can do</em> (call
+                <code>show_horoscope</code> with a DOB) and points to which UI
+                to render.</p>
+                <p><strong><code>registerAppResource</code></strong> defines
+                <em>what UI to show</em> — the actual React HTML at
+                <code>WIDGET_URI</code>.</p>
+              </td>
+              <td class="code-cell">
+                <pre class="diagram">User: "Show my horoscope"
+        │
+        ▼
+ChatGPT reads tool description → asks for DOB
+        │
+        ▼
+ChatGPT calls registerAppTool handler (show_horoscope)
+        │
+        ├──► Returns structuredContent { sign, mood, points }
+        │
+        └──► _meta.ui.resourceUri → registerAppResource widget
+                    │
+                    ▼
+             React card renders in iframe</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Flow steps -->
+      <section class="doc-section">
+        <h2>Step-by-step</h2>
+
+        <table class="doc-table doc-table--split">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>What happens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>User asks for their horoscope in ChatGPT</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>
+                ChatGPT reads the <code>description</code> and asks for date of
+                birth
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>
+                ChatGPT calls <code>show_horoscope</code> with
+                <code>{ dob: "1990-08-15" }</code>
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>
+                <code>handleShowHoroscope</code> runs on your server (with mock
+                API delay)
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>
+                Tool returns <code>structuredContent</code> → widget receives it
+                via <code>ontoolresult</code>
+              </td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Horoscope card renders in the chat</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Summary -->
+      <section class="doc-section">
+        <h2>One-line summary</h2>
+        <p>
+          <code>registerAppTool</code> exposes a server action to ChatGPT, tells
+          the model how to use it, links it to your widget UI, and runs your
+          handler when called.
+        </p>
+        <p>
+          Related:
+          <a href="/register-app-resource.html">registerAppResource</a> ·
+          <a href="/app-tsx.html">src/App.tsx</a> ·
+          <a href="/widget-uri.html">WIDGET_URI</a>
+        </p>
+      </section>
+    </div>
+  </body>
+</html>
