@@ -10,7 +10,8 @@
     "start": "node server.js",
     "build:start": "npm run build && npm run start",
     "start:ngrok": "bash scripts/serve-ngrok.sh",
-    "docs": "node docs/server.js"
+    "docs": "node docs/server.js",
+    "inspector": "npx @modelcontextprotocol/inspector@latest --server-url http://localhost:3000/mcp --transport http"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.1",
