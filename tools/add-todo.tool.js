@@ -23,6 +23,7 @@ EXAMPLES (user message → tool call)
 
 DO NOT CALL
 - To mark a task done → use complete_todo instead.
+- To mark a task incomplete → use incomplete_todo instead.
 - When the user only asks to see their list → the widget already shows tasks; reply from context.
 
 INPUT

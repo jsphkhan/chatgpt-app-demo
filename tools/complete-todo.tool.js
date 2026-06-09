@@ -31,6 +31,7 @@ If the user names a task instead of an id, look up ids from the latest structure
 
 DO NOT CALL
 - To add a new task → use add_todo instead.
+- To mark a task incomplete again → use incomplete_todo instead.
 - If no matching incomplete task exists → tell the user; do not guess an id.
 
 INPUT

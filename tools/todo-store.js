@@ -34,6 +34,17 @@ export function completeTodo(id) {
   return todo;
 }
 
+export function incompleteTodo(id) {
+  const todo = todos.find((task) => task.id === id);
+  if (!todo) return null;
+
+  todos = todos.map((task) =>
+    task.id === id ? { ...task, completed: false } : task
+  );
+
+  return todo;
+}
+
 export function replyWithTodos(message) {
   return {
     content: message ? [{ type: "text", text: message }] : [],

@@ -38,7 +38,10 @@ export default function App() {
   });
 
   const callTodoTool = useCallback(
-    async (name: "add_todo" | "complete_todo", args: Record<string, string>) => {
+    async (
+      name: "add_todo" | "complete_todo" | "incomplete_todo",
+      args: Record<string, string>
+    ) => {
       if (!app) return;
       const result = await app.callServerTool({ name, arguments: args });
       updateTasksFromResult(result, setTasks);
@@ -62,14 +65,14 @@ export default function App() {
     }
   };
 
-  const handleComplete = async (id: string) => {
+  const handleToggleComplete = async (id: string, completed: boolean) => {
     if (!app || busyIds.has(id)) return;
 
     setBusyIds((prev) => new Set(prev).add(id));
     try {
-      await callTodoTool("complete_todo", { id });
+      await callTodoTool(completed ? "incomplete_todo" : "complete_todo", { id });
     } catch (err) {
-      console.error("Failed to complete todo:", err);
+      console.error("Failed to update todo:", err);
     } finally {
       setBusyIds((prev) => {
         const next = new Set(prev);
@@ -127,10 +130,8 @@ export default function App() {
                   <input
                     type="checkbox"
                     checked={task.completed}
-                    disabled={task.completed || busy}
-                    onChange={() => {
-                      if (!task.completed) handleComplete(task.id);
-                    }}
+                    disabled={busy}
+                    onChange={() => handleToggleComplete(task.id, task.completed)}
                   />
                   <span>{task.title}</span>
                 </label>

@@ -13,6 +13,7 @@ import { PORT, MCP_PATH, WIDGET_URI, getBaseUrl, getWidgetCsp } from "./config.j
 import { registerWidget, DIST_DIR } from "./widget.js";
 import { registerAddTodoTool } from "./tools/add-todo.tool.js";
 import { registerCompleteTodoTool } from "./tools/complete-todo.tool.js";
+import { registerIncompleteTodoTool } from "./tools/incomplete-todo.tool.js";
 
 // --- Step 1: Create the MCP server (tools + widget) ---
 
@@ -23,6 +24,7 @@ function createMcpServer() {
   const toolMeta = { widgetUri: WIDGET_URI, widgetCsp: getWidgetCsp() };
   registerAddTodoTool(server, toolMeta);
   registerCompleteTodoTool(server, toolMeta);
+  registerIncompleteTodoTool(server, toolMeta);
 
   return server;
 }
