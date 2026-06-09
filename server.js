@@ -1,5 +1,5 @@
 /**
- * Horoscope ChatGPT App — MCP Server
+ * Todo ChatGPT App — MCP Server
  *
  * This file does 3 things:
  *   1. Starts an Express web server
@@ -11,18 +11,18 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { PORT, MCP_PATH, WIDGET_URI, getBaseUrl, getWidgetCsp } from "./config.js";
 import { registerWidget, DIST_DIR } from "./widget.js";
-import { registerShowHoroscopeTool } from "./tools/show-horoscope.tool.js";
+import { registerAddTodoTool } from "./tools/add-todo.tool.js";
+import { registerCompleteTodoTool } from "./tools/complete-todo.tool.js";
 
 // --- Step 1: Create the MCP server (tools + widget) ---
 
 function createMcpServer() {
-  const server = new McpServer({ name: "horoscope-app", version: "0.1.0" });
+  const server = new McpServer({ name: "todo-app", version: "0.1.0" });
 
   registerWidget(server);
-  registerShowHoroscopeTool(server, {
-    widgetUri: WIDGET_URI,
-    widgetCsp: getWidgetCsp(),
-  });
+  const toolMeta = { widgetUri: WIDGET_URI, widgetCsp: getWidgetCsp() };
+  registerAddTodoTool(server, toolMeta);
+  registerCompleteTodoTool(server, toolMeta);
 
   return server;
 }
@@ -73,7 +73,7 @@ app.use(express.json());
 app.use(express.static(DIST_DIR));
 
 app.get("/", (_req, res) => {
-  res.send("Horoscope MCP server");
+  res.send("Todo MCP server");
 });
 
 app.post(MCP_PATH, handleMcp);

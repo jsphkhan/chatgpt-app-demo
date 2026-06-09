@@ -31,7 +31,7 @@ export function registerWidget(server) {
 
   registerAppResource(
     server,
-    "horoscope-widget",
+    "todo-widget",
     WIDGET_URI,
     { _meta: { ui: { csp } } },
     async () => ({

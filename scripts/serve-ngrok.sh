@@ -8,6 +8,7 @@
 # 1. Builds the React widget (npm run build)
 # 2. Starts the MCP server on a local port with BASE_URL set to the public ngrok host
 # 3. Starts one ngrok HTTP tunnel to that port
+# 4. When ngrok stops (Ctrl+C, terminal close, or ngrok exit), stops the MCP server too
 #
 # Prerequisites:
 # - ngrok installed and authenticated (`ngrok config add-authtoken …` once globally)
@@ -22,6 +23,8 @@
 set -e
 
 SERVER_PID=""
+NGROK_PID=""
+CLEANING_UP=0
 
 # Static ngrok hostname (paid / reserved). Override for your account.
 NGROK_DOMAIN="${NGROK_DOMAIN:-chatgpt-hello-demo.ngrok.dev}"
@@ -41,18 +44,39 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-cleanup() {
-    local code="${1:-0}"
-    echo -e "\n${YELLOW}Cleaning up...${NC}"
-    pkill -f "ngrok" 2>/dev/null || true
-    if [ -n "${SERVER_PID:-}" ]; then
+stop_server() {
+    if [ -n "${SERVER_PID:-}" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
         kill "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
     fi
-    rm -f "${NGROK_CONFIG:-}" 2>/dev/null || true
-    exit "$code"
+
+    # Fallback: free the MCP port if the process outlived the tracked PID
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -ti:"$SERVER_PORT" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    fi
 }
 
-trap 'cleanup 0' SIGINT SIGTERM
+stop_ngrok() {
+    if [ -n "${NGROK_PID:-}" ] && kill -0 "$NGROK_PID" 2>/dev/null; then
+        kill "$NGROK_PID" 2>/dev/null || true
+        wait "$NGROK_PID" 2>/dev/null || true
+    fi
+    pkill -f "ngrok start hello-app" 2>/dev/null || true
+}
+
+cleanup() {
+    if [ "$CLEANING_UP" -eq 1 ]; then
+        return
+    fi
+    CLEANING_UP=1
+
+    echo -e "\n${YELLOW}Cleaning up...${NC}"
+    stop_ngrok
+    stop_server
+    rm -f "${NGROK_CONFIG:-}" 2>/dev/null || true
+}
+
+trap cleanup SIGINT SIGTERM SIGHUP EXIT
 
 echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}  chatgpt-app-demo — ngrok tunnel${NC}"
@@ -68,8 +92,11 @@ echo -e "${YELLOW}Building widget...${NC}"
 npm run build
 echo ""
 
-echo -e "${YELLOW}Stopping any existing ngrok processes...${NC}"
-pkill -f "ngrok" 2>/dev/null || true
+echo -e "${YELLOW}Stopping any existing ngrok / MCP server on port ${SERVER_PORT}...${NC}"
+pkill -f "ngrok start hello-app" 2>/dev/null || true
+if command -v lsof >/dev/null 2>&1; then
+    lsof -ti:"$SERVER_PORT" 2>/dev/null | xargs kill -9 2>/dev/null || true
+fi
 sleep 1
 
 echo -e "${YELLOW}Starting MCP server on port ${SERVER_PORT}...${NC}"
@@ -105,10 +132,11 @@ if [ -z "$USER_CONFIG" ] || [ ! -f "$USER_CONFIG" ]; then
     echo -e "${RED}ngrok user config not found.${NC}"
     echo -e "${YELLOW}Run: ngrok config add-authtoken <token>${NC}"
     echo -e "${YELLOW}Or set NGROK_USER_CONFIG to your ngrok.yml path.${NC}"
-    cleanup 1
+    exit 1
 fi
 
 ngrok start hello-app --config "$USER_CONFIG" --config "$NGROK_CONFIG" --log=stdout > /dev/null &
+NGROK_PID=$!
 sleep 3
 
 echo -e "${YELLOW}Verifying ngrok tunnel...${NC}"
@@ -122,7 +150,7 @@ fi
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}  Hello World ChatGPT App — ready${NC}"
+echo -e "${GREEN}  Todo ChatGPT App — ready${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${CYAN}Health:${NC}           ${PUBLIC_URL}/"
@@ -132,9 +160,10 @@ echo -e "${YELLOW}ChatGPT setup:${NC}"
 echo -e "  1. Settings → Apps & Connectors → Advanced → Developer mode ON"
 echo -e "  2. Settings → Connectors → Create"
 echo -e "  3. Paste: ${MCP_URL}"
-echo -e '  4. In a chat, add the connector (+ → More), then say "Show my horoscope"'
+echo -e '  4. In a chat, add the connector (+ → More), then say "Add a task to read my book"'
 echo ""
-echo -e "${YELLOW}Press Ctrl+C to stop ngrok and the local server${NC}"
+echo -e "${YELLOW}Press Ctrl+C or close this terminal to stop ngrok and the MCP server${NC}"
 echo ""
 
-wait "$SERVER_PID" || cleanup 1
+# Block until ngrok exits; EXIT trap then stops the MCP server on port ${SERVER_PORT}
+wait "$NGROK_PID" 2>/dev/null || true

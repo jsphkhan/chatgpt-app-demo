@@ -1,75 +1,83 @@
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
-type HoroscopeResult = {
-  dob?: string;
-  sign?: string;
-  symbol?: string;
-  mood?: string;
-  points?: string[];
-  accentColor?: string;
+type TodoTask = {
+  id: string;
+  title: string;
+  completed: boolean;
 };
 
-function formatDob(dob: string) {
-  const date = new Date(`${dob}T00:00:00`);
-  return date.toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+type TodoResult = {
+  tasks?: TodoTask[];
+};
 
-function HoroscopeSkeleton() {
-  return (
-    <main className="card card--horoscope card--loading">
-      <header className="header">
-        <div className="skeleton skeleton--symbol" />
-        <div className="skeleton-group">
-          <div className="skeleton skeleton--eyebrow" />
-          <div className="skeleton skeleton--title" />
-          <div className="skeleton skeleton--dob" />
-        </div>
-      </header>
-
-      <div className="skeleton skeleton--mood" />
-
-      <ul className="insights insights--skeleton">
-        <li><div className="skeleton skeleton--line" /></li>
-        <li><div className="skeleton skeleton--line" /></li>
-        <li><div className="skeleton skeleton--line skeleton--line-short" /></li>
-      </ul>
-
-      <p className="loading-label">Reading the stars…</p>
-    </main>
-  );
+function updateTasksFromResult(
+  result: { structuredContent?: TodoResult } | undefined,
+  setTasks: (tasks: TodoTask[]) => void
+) {
+  if (result?.structuredContent?.tasks) {
+    setTasks(result.structuredContent.tasks);
+  }
 }
 
 export default function App() {
-  const [horoscope, setHoroscope] = useState<HoroscopeResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [tasks, setTasks] = useState<TodoTask[]>([]);
+  const [title, setTitle] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const [busyIds, setBusyIds] = useState<Set<string>>(() => new Set());
 
-  const { isConnected, error } = useApp({
-    appInfo: { name: "horoscope-widget", version: "0.1.0" },
+  const { app, isConnected, error } = useApp({
+    appInfo: { name: "todo-widget", version: "0.1.0" },
     capabilities: {},
-    onAppCreated: (app) => {
-      app.ontoolinput = () => {
-        setLoading(true);
-        setHoroscope(null);
-      };
-
-      app.ontoolresult = (result) => {
-        setLoading(false);
-        const data = result.structuredContent as HoroscopeResult | undefined;
-        if (data?.sign && data.points?.length) {
-          setHoroscope(data);
-        }
-      };
-
-      app.ontoolcancelled = () => {
-        setLoading(false);
+    onAppCreated: (appInstance) => {
+      appInstance.ontoolresult = (result) => {
+        console.log('## ontoolresult', result);
+        updateTasksFromResult(result, setTasks);
       };
     },
   });
+
+  const callTodoTool = useCallback(
+    async (name: "add_todo" | "complete_todo", args: Record<string, string>) => {
+      if (!app) return;
+      const result = await app.callServerTool({ name, arguments: args });
+      updateTasksFromResult(result, setTasks);
+    },
+    [app]
+  );
+
+  const handleAdd = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = title.trim();
+    if (!trimmed || isAdding || !app) return;
+
+    setIsAdding(true);
+    try {
+      await callTodoTool("add_todo", { title: trimmed });
+      setTitle("");
+    } catch (err) {
+      console.error("Failed to add todo:", err);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    if (!app || busyIds.has(id)) return;
+
+    setBusyIds((prev) => new Set(prev).add(id));
+    try {
+      await callTodoTool("complete_todo", { id });
+    } catch (err) {
+      console.error("Failed to complete todo:", err);
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   if (error) {
     return (
@@ -87,48 +95,54 @@ export default function App() {
     );
   }
 
-  if (loading) {
-    return <HoroscopeSkeleton />;
-  }
-
-  if (!horoscope) {
-    return (
-      <main className="card card--empty">
-        <div className="empty-icon">✨</div>
-        <h1>Your Horoscope</h1>
-        <p className="muted">
-          Ask ChatGPT to show your horoscope — you&apos;ll be asked for your date
-          of birth.
-        </p>
-      </main>
-    );
-  }
-
-  const accent = horoscope.accentColor ?? "#7C5CFC";
-
   return (
-    <main
-      className="card card--horoscope"
-      style={{ "--accent": accent } as React.CSSProperties}
-    >
-      <header className="header">
-        <span className="symbol">{horoscope.symbol}</span>
-        <div>
-          <p className="eyebrow">Today&apos;s reading</p>
-          <h1>{horoscope.sign}</h1>
-          {horoscope.dob && (
-            <p className="dob">Born {formatDob(horoscope.dob)}</p>
-          )}
-        </div>
-      </header>
+    <main className="card card--todo">
+      <h1>Todo list</h1>
 
-      {horoscope.mood && <p className="mood">{horoscope.mood}</p>}
+      <form className="todo-form" onSubmit={handleAdd} autoComplete="off">
+        <input
+          className="todo-input"
+          name="title"
+          placeholder="Add a task"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+        <button className="todo-add" type="submit" disabled={isAdding}>
+          {isAdding ? "Adding…" : "Add"}
+        </button>
+      </form>
 
-      <ul className="insights">
-        {horoscope.points?.map((point) => (
-          <li key={point}>{point}</li>
-        ))}
+      <ul className="todo-list">
+        {tasks.map((task) => {
+          const busy = busyIds.has(task.id);
+          return (
+            <li
+              key={task.id}
+              className="todo-item"
+              data-completed={String(task.completed)}
+              data-busy={String(busy)}
+            >
+              <label className="todo-label">
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  disabled={task.completed || busy}
+                  onChange={() => {
+                    if (!task.completed) handleComplete(task.id);
+                  }}
+                />
+                <span>{task.title}</span>
+              </label>
+            </li>
+          );
+        })}
       </ul>
+
+      {tasks.length === 0 && (
+        <p className="muted todo-empty">
+          Ask ChatGPT to add a task, or type one above.
+        </p>
+      )}
     </main>
   );
 }

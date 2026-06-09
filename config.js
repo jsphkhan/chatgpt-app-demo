@@ -7,7 +7,7 @@ export const MCP_PATH = "/mcp";
 // Widget (built by Vite into dist/)
 export const DIST_DIR = resolve("dist");
 export const WIDGET_HTML = resolve(DIST_DIR, "index.html");
-export const WIDGET_URI = "ui://widget/horoscope.html";
+export const WIDGET_URI = "ui://widget/todo.html";
 
 // Public URL for ngrok — widget JS/CSS must be allowed in CSP
 export const NGROK_URL = "https://chatgpt-hello-demo.ngrok.dev";
